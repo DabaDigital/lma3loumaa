@@ -195,18 +195,22 @@ test("desktop and mobile layouts load without broken assets or runtime errors", 
       ),
       `overflow at ${width}px`,
     ).toBeTruthy();
+    // Lazy images below the fold never finish loading in a headless run, so
+    // `complete` alone silently excuses exactly the ones least likely to be
+    // noticed by eye. Force every image to load, then name what failed.
     expect(
-      await page
-        .locator("img")
-        .evaluateAll(
-          (imgs) =>
-            imgs.filter(
-              (i) =>
-                (i as HTMLImageElement).complete &&
-                !(i as HTMLImageElement).naturalWidth,
-            ).length,
-        ),
-    ).toBe(0);
+      await page.locator("img").evaluateAll(async (imgs) => {
+        await Promise.allSettled(
+          imgs.map((i) => {
+            (i as HTMLImageElement).loading = "eager";
+            return (i as HTMLImageElement).decode();
+          }),
+        );
+        return imgs
+          .filter((i) => !(i as HTMLImageElement).naturalWidth)
+          .map((i) => (i as HTMLImageElement).getAttribute("src"));
+      }),
+    ).toEqual([]);
     if (width === 1440 || width === 390)
       await page.screenshot({
         path: `test-results/site-${width}.png`,

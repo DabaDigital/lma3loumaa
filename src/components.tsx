@@ -1,3 +1,4 @@
+import { LoadingImage } from "./LoadingImage";
 import {
   useCallback,
   useEffect,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { FoodImage, Locale } from "./data";
+import { resetFoodBackground, syncFoodBackground } from "./foodBackground";
 
 export function Button({
   children,
@@ -684,36 +686,48 @@ export function Modal({
     </dialog>
   );
 }
+/** Every dish visual the menu can name, in menu order. A kind stays valid
+ *  here — and selectable in the dashboard — whether or not a photo exists
+ *  for it yet, so a dish never becomes unsaveable for want of a picture. */
+export const foodKinds: FoodImage[] = [
+  "classic",
+  "cheddar",
+  "jalapeno",
+  "cheddarJalapeno",
+  "mexican",
+  "mezze",
+  "baba",
+  "moutabal",
+  "muhammara",
+  "spicy",
+  "houmousShawarma",
+  "beetroot",
+  "plate",
+  "rolls",
+  "family",
+  "fries",
+  "lemonade",
+  "drink",
+  "dessert",
+  "kunafa",
+];
 /**
- * The restaurant's own cut-out photography, one transparent PNG per dish.
- * These replace sub-regions cropped out of the printed-menu sheets: those
- * regions were 68x68 to 298x148 for tiles rendered at 145-259 CSS pixels, so
- * every card upscaled its photo 1.4x-2.1x (2.9x-4.3x on a retina screen) and
- * needed a hand-drawn clip-path to hide the sheet background behind it.
- * Dimensions are the intrinsic pixel size, used to reserve space (no CLS).
+ * The restaurant's own photography, one file per dish, filename included so
+ * JPEG and PNG can sit side by side. Dimensions are the intrinsic pixel size,
+ * used to reserve space before the file arrives (no layout shift).
+ *
+ * Kinds absent here have no photo yet and fall back to the brand mark; see
+ * foodKinds above. Supply the file, add the entry, and the dish picks it up.
  */
-export const foodImages: Record<FoodImage, [string, number, number]> = {
-  classic: ["01-original-shawarma", 945, 645],
-  cheddar: ["02-cheddar-shawarma", 519, 462],
-  jalapeno: ["03-jalapenos-shawarma", 573, 390],
-  mexican: ["05-mexicaine-shawarma", 576, 378],
-  plate: ["06-shawarma-plate", 846, 636],
-  rolls: ["07-family-box-coke", 801, 645],
-  family: ["08-family-box-large", 1110, 984],
-  drink: ["09-drinks-assortment", 309, 216],
-  fries: ["12-fries", 264, 138],
-  lemonade: ["15-lemonade", 237, 264],
-  mezze: ["23-spread-06", 268, 280],
-  baba: ["20-spread-03", 288, 288],
-  moutabal: ["18-spread-01", 292, 292],
-  muhammara: ["21-spread-04", 288, 288],
-  spicy: ["19-spread-02", 288, 288],
-  beetroot: ["22-spread-05", 284, 284],
-  houmousShawarma: ["24-spread-07", 288, 284],
-  // Both desserts are mahalabia; only the pistachio-topped bowl was supplied,
-  // so the plain one borrows it until a photo of its own exists.
-  kunafa: ["16-hummus", 246, 243],
-  dessert: ["16-hummus", 246, 243],
+export const foodImages: Partial<Record<FoodImage, [string, number, number]>> = {
+  classic: ["/assets/shawarma_normal.png", 1536, 1024],
+  cheddar: ["cheddar.jpeg", 500, 500],
+  jalapeno: ["jalapenos.jpeg", 500, 500],
+  cheddarJalapeno: ["cheddar_jalapenos.jpeg", 500, 500],
+  mexican: ["mexicaine.jpeg", 500, 500],
+  plate: ["/assets/plat_shawarma.png", 1448, 1086],
+  rolls: ["/assets/shawarma rolls.png", 1536, 1024],
+  family: ["/assets/family-box-web.png", 1254, 1254],
 };
 export function FoodVisual({
   kind,
@@ -724,21 +738,44 @@ export function FoodVisual({
   className?: string;
   label?: string;
 }) {
-  if (!(kind in foodImages))
+  const photo = foodImages[kind as FoodImage];
+  if (!photo) {
+    // An uploaded or linked photo renders as given; a dish whose photo has not
+    // been supplied yet shows the brand mark rather than a broken image.
+    if (kind.startsWith("https://") || kind.startsWith("/assets/"))
+      return (
+        <div className={`food-visual food-custom ${className}`}>
+          <div className="food-crop">
+            <LoadingImage
+              src={kind}
+              alt={label}
+              loading="lazy"
+              onLoad={(event) => void syncFoodBackground(event.currentTarget)}
+              onError={(event) => resetFoodBackground(event.currentTarget)}
+            />
+          </div>
+        </div>
+      );
     return (
-      <div className={`food-visual food-custom ${className}`}>
-        <img
-          src={
-            kind.startsWith("https://") || kind.startsWith("/assets/")
-              ? kind
-              : `/assets/menu/${foodImages.classic[0]}.png`
-          }
-          alt={label}
-          loading="lazy"
-        />
+      <div
+        className={`food-visual food-pending ${className}`}
+        role={label ? "img" : undefined}
+        aria-label={label || undefined}
+        aria-hidden={!label}
+      >
+        <div className="food-crop" style={{ aspectRatio: "1/1" }}>
+          <LoadingImage
+            src="/assets/lma3louma-logo.png"
+            alt=""
+            loading="lazy"
+            onLoad={(event) => resetFoodBackground(event.currentTarget)}
+            draggable={false}
+          />
+        </div>
       </div>
     );
-  const [file, w, h] = foodImages[kind as FoodImage];
+  }
+  const [file, w, h] = photo;
   return (
     <div
       className={`food-visual food-${kind} ${className}`}
@@ -748,12 +785,14 @@ export function FoodVisual({
       style={{ "--food-ratio": `${w}/${h}` } as CSSProperties}
     >
       <div className="food-crop" style={{ aspectRatio: `${w}/${h}` }}>
-        <img
-          src={`/assets/menu/${file}.png`}
+        <LoadingImage
+          src={file.startsWith("/") ? file : `/assets/menu/${file}`}
           alt=""
           width={w}
           height={h}
           loading={className.includes("hero") ? "eager" : "lazy"}
+          onLoad={(event) => void syncFoodBackground(event.currentTarget)}
+          onError={(event) => resetFoodBackground(event.currentTarget)}
           draggable={false}
         />
       </div>

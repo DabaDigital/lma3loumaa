@@ -1,13 +1,14 @@
+import { LoadingImage } from "../LoadingImage";
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { Plus, Trash2, Save, Upload } from "lucide-react";
-import { Button, foodImages, FoodVisual, Modal, Select } from "../components";
+import { Button, foodKinds, FoodVisual, Modal, Select } from "../components";
 import { l } from "../data";
-import type { Locale, Localized } from "../data";
+import type { FoodImage, Locale, Localized } from "../data";
 import type { Category, MenuItem, Location } from "../content";
 import { supabase } from "../supabase";
 import { copy } from "./copy";
-import type { Entry, Section } from "./Admin";
+import type { ContentSection, Entry } from "./Admin";
 
 const languages = { fr: "Français", en: "English", ar: "العربية" };
 // Mirrors the bucket limits set in supabase/storage.sql. Both are enforced
@@ -23,7 +24,7 @@ export function Editor({
   onClose,
   onSaved,
 }: {
-  section: Exclude<Section, "overview">;
+  section: ContentSection;
   entry: Entry | "new";
   categories: Category[];
   locale: Locale;
@@ -43,9 +44,11 @@ export function Editor({
   const [image, setImage] = useState(
     section === "items"
       ? (item?.image ?? "classic")
-      : (location?.image ?? "/assets/maarif.png"),
+      : (location?.image ?? "/assets/lma3loumaa_maarif.png"),
   );
-  const [customImage, setCustomImage] = useState(!(image in foodImages));
+  const [customImage, setCustomImage] = useState(
+    !foodKinds.includes(image as FoodImage),
+  );
   const [variants, setVariants] = useState(item?.variants ?? []);
   const [category, setCategory] = useState(
     item?.category ?? categories[0]?.id ?? "",
@@ -313,7 +316,7 @@ export function Editor({
                         setImage(v === "custom" ? "" : v);
                       }}
                       options={[
-                        ...Object.keys(foodImages).map((kind) => ({
+                        ...foodKinds.map((kind) => ({
                           value: kind,
                           label: kind,
                         })),
@@ -374,7 +377,7 @@ export function Editor({
                   {section === "items" ? (
                     <FoodVisual kind={image} label={name[locale]} />
                   ) : (
-                    <img
+                    <LoadingImage
                       src={
                         image.startsWith("https://") ||
                         image.startsWith("/assets/")

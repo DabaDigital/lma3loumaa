@@ -1,3 +1,4 @@
+import { LoadingImage } from "../LoadingImage";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
@@ -18,6 +19,7 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  MessageSquare,
 } from "lucide-react";
 import { Button, Dropdown, FoodVisual, Modal, Select } from "../components";
 import { supabase } from "../supabase";
@@ -26,9 +28,17 @@ import type { Category, MenuItem, Location, Managed } from "../content";
 import type { Locale } from "../data";
 import { copy } from "./copy";
 import { Editor } from "./Editor";
+import { ReviewsAdmin } from "./ReviewsAdmin";
 import "./admin.css";
+import { ContentSkeleton } from "../Skeleton";
 
-export type Section = "overview" | "items" | "categories" | "locations";
+export type ContentSection = "items" | "categories" | "locations";
+export type Section = "overview" | ContentSection | "reviews";
+function isContentSection(section: Section): section is ContentSection {
+  return (
+    section === "items" || section === "categories" || section === "locations"
+  );
+}
 export type Entry = Category | MenuItem | Location;
 export const tables = {
   items: "menu_items",
@@ -46,7 +56,7 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [section, setSection] = useState<Section>(() => {
     const path = window.location.pathname.split("/")[2];
-    return ["items", "categories", "locations"].includes(path)
+    return ["items", "categories", "locations", "reviews"].includes(path)
       ? (path as Section)
       : "overview";
   });
@@ -112,13 +122,15 @@ export default function Admin() {
     setVisibility("");
     setNotice("");
     setFailure("");
+    setEditing(null);
+    setDeleting(null);
     history.pushState({}, "", `/admin${next === "overview" ? "" : `/${next}`}`);
   };
   useEffect(() => {
     const pop = () => {
       const path = location.pathname.split("/")[2];
       setSection(
-        ["items", "categories", "locations"].includes(path)
+        ["items", "categories", "locations", "reviews"].includes(path)
           ? (path as Section)
           : "overview",
       );
@@ -167,7 +179,10 @@ export default function Admin() {
   const brand = (
     <a href="/" className="admin-brand">
       <span className="brand-mark">
-        <img src="/assets/lma3louma-logo.png" alt="Shawarma Lma3louma" />
+        <LoadingImage
+          src="/assets/lma3louma-logo.png"
+          alt="Shawarma Lma3louma"
+        />
       </span>
       <small>
         SHAWARMA <b>LMA3LOUMA</b>
@@ -214,7 +229,7 @@ export default function Admin() {
             <h2>{!supabase ? t("setup") : t("login")}</h2>
             <p>{!supabase ? t("setupSub") : t("loginSub")}</p>
             {!supabase ? null : checking ? (
-              <p role="status">{t("loading")}</p>
+              <ContentSkeleton kind="login" />
             ) : user ? (
               <>
                 <p role="alert">{t("denied")}</p>
@@ -266,33 +281,36 @@ export default function Admin() {
       </div>
     );
 
-  const links = [
-    { id: "overview", label: "overview", icon: LayoutDashboard },
+  const contentLinks = [
     { id: "items", label: "menu", icon: Utensils },
     { id: "categories", label: "categories", icon: Layers },
     { id: "locations", label: "locations", icon: MapPin },
   ] as const;
-  const rows =
-    section === "overview"
-      ? []
-      : content[section].filter(
-          (row: Managed) =>
-            Object.values(row.name)
-              .join(" ")
-              .toLocaleLowerCase()
-              .includes(query.toLocaleLowerCase()) &&
-            (!visibility || row.available === (visibility === "visible")) &&
-            (section !== "items" ||
-              !category ||
-              (row as MenuItem).category === category),
-        );
+  const links = [
+    { id: "overview", label: "overview", icon: LayoutDashboard },
+    ...contentLinks,
+    { id: "reviews", label: "reviews", icon: MessageSquare },
+  ] as const;
+  const rows = !isContentSection(section)
+    ? []
+    : content[section].filter(
+        (row: Managed) =>
+          Object.values(row.name)
+            .join(" ")
+            .toLocaleLowerCase()
+            .includes(query.toLocaleLowerCase()) &&
+          (!visibility || row.available === (visibility === "visible")) &&
+          (section !== "items" ||
+            !category ||
+            (row as MenuItem).category === category),
+      );
   const add = () => {
     setFailure("");
     setNotice("");
     setEditing("new");
   };
   const remove = async () => {
-    if (!deleting || section === "overview" || busy) return;
+    if (!deleting || !isContentSection(section) || busy) return;
     setBusy(true);
     setFailure("");
     try {
@@ -333,7 +351,7 @@ export default function Admin() {
             >
               <Icon size={19} />
               {t(label)}
-              {id !== "overview" && <small>{content[id].length}</small>}
+              {isContentSection(id) && <small>{content[id].length}</small>}
             </button>
           ))}
         </nav>
@@ -395,9 +413,15 @@ export default function Admin() {
                   ? t("welcome")
                   : t(section === "items" ? "menu" : section)}
               </h1>
-              <p>{section === "overview" ? t("intro") : t("visibleHelp")}</p>
+              <p>
+                {section === "overview"
+                  ? t("intro")
+                  : section === "reviews"
+                    ? t("reviewsHelp")
+                    : t("visibleHelp")}
+              </p>
             </div>
-            {section !== "overview" && (
+            {isContentSection(section) && (
               <Button
                 onClick={add}
                 disabled={
@@ -421,7 +445,7 @@ export default function Admin() {
               {failure}
             </p>
           )}
-          {content.error && (
+          {section !== "reviews" && content.error && (
             <div className="admin-error" role="alert">
               {t("loadError")}{" "}
               <button onClick={() => void content.refresh()}>
@@ -430,30 +454,32 @@ export default function Admin() {
               </button>
             </div>
           )}
-          {content.loading ? (
-            <p role="status">{t("loading")}</p>
+          {section === "reviews" ? (
+            <ReviewsAdmin locale={locale} />
+          ) : content.loading ? (
+            <ContentSkeleton
+              kind={section === "overview" ? "overview" : "table"}
+            />
           ) : section === "overview" ? (
             <>
               <div className="admin-stats">
-                {links
-                  .filter((link) => link.id !== "overview")
-                  .map(({ id, label, icon: Icon }) => (
-                    <button key={id} onClick={() => navigate(id)}>
-                      <span className="stat-label">
-                        {t(label)}
-                        <Icon size={20} />
-                      </span>
-                      <strong>
-                        {content[id].length.toString().padStart(2, "0")}
-                      </strong>
-                      <span className="stat-caption">
-                        <span className="status-dot" />
-                        {content[id].filter((row) => row.available).length}{" "}
-                        {t("published")}
-                        <ArrowUpRight size={18} />
-                      </span>
-                    </button>
-                  ))}
+                {contentLinks.map(({ id, label, icon: Icon }) => (
+                  <button key={id} onClick={() => navigate(id)}>
+                    <span className="stat-label">
+                      {t(label)}
+                      <Icon size={20} />
+                    </span>
+                    <strong>
+                      {content[id].length.toString().padStart(2, "0")}
+                    </strong>
+                    <span className="stat-caption">
+                      <span className="status-dot" />
+                      {content[id].filter((row) => row.available).length}{" "}
+                      {t("published")}
+                      <ArrowUpRight size={18} />
+                    </span>
+                  </button>
+                ))}
               </div>
               <div className="admin-overview-grid">
                 <section className="admin-panel">
@@ -532,7 +558,7 @@ export default function Admin() {
                 <div>
                   {content.locations.map((loc) => (
                     <article key={loc.id}>
-                      <img src={loc.image} alt="" />
+                      <LoadingImage src={loc.image} alt="" />
                       <div>
                         <strong>{loc.name[locale]}</strong>
                         <p>{loc.address[locale]}</p>
@@ -621,7 +647,7 @@ export default function Admin() {
                                 <FoodVisual kind={(row as MenuItem).image} />
                               </div>
                             ) : section === "locations" ? (
-                              <img
+                              <LoadingImage
                                 className="admin-location-thumb"
                                 src={(row as Location).image}
                                 alt=""
@@ -711,7 +737,7 @@ export default function Admin() {
           </div>
         </main>
       </div>
-      {editing && section !== "overview" && (
+      {editing && isContentSection(section) && (
         <Editor
           section={section}
           entry={editing}

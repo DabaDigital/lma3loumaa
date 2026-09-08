@@ -36,6 +36,7 @@ export type FoodImage =
   | "classic"
   | "cheddar"
   | "jalapeno"
+  | "cheddarJalapeno"
   | "mexican"
   | "mezze"
   | "baba"
@@ -121,7 +122,7 @@ export const items: Item[] = [
     category: "shawarma",
     price: 39,
     menuPrice: 56,
-    image: "cheddar",
+    image: "cheddarJalapeno",
     description: l(
       "Le fondant du cheddar rencontre le piquant des jalapeños.",
       "Melty cheddar meets the kick of jalapeños.",
@@ -350,7 +351,7 @@ export const locations = [
       "Maârif district, Casablanca",
       "حي المعاريف، الدار البيضاء",
     ),
-    image: "/assets/maarif.png",
+    image: "/assets/lma3loumaa_maarif.png",
     map: "https://www.google.com/maps/place/Shawarma+Lma3louma+-+Ma%C3%A2rif/@33.5837923,-7.6390882,17z/data=!3m1!4b1!4m6!3m5!1s0xda7d382b44fcc7b:0xb7a378071b9d03f6!8m2!3d33.5837923!4d-7.6390882!16s%2Fg%2F11wc27szhm",
   },
   {
@@ -366,7 +367,7 @@ export const locations = [
       "Jnane Californie, Boulevard Haifa, Casablanca",
       "جنان كاليفورنيا، شارع حيفا، الدار البيضاء",
     ),
-    image: "/assets/californie.png",
+    image: "/assets/lma3loumaa_calefornie.png",
     map: "https://www.google.com/maps?q=Shawarma+Lma3louma+-+Jnane+Californie,+Jnane+Californie,+Bd+Haifa,+Casablanca&ftid=0xda633e7f846aded:0xf98da2a273f17b5f",
   },
 ];

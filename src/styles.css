@@ -506,22 +506,33 @@ select:focus-visible {
   overflow: hidden;
   isolation: isolate;
 }
-/* One transparent cut-out per dish, so the photo fills the tile on its own
-   instead of being an offset window onto a printed-menu sheet. */
+/* Preserve each supplied photo's proportions inside its display frame. */
 .food-crop img {
   width: 100%;
   height: 100%;
   object-fit: contain;
   display: block;
 }
+/* Dishes whose photo has not been supplied yet: the brand mark, quietly, so
+   the tile still reads as deliberate rather than as a failed image. */
+.food-pending .food-crop {
+  display: grid;
+  place-items: center;
+}
+.food-pending .food-crop img {
+  width: 42%;
+  height: auto;
+  opacity: 0.32;
+}
 .hero-food {
-  position: absolute !important;
-  width: 110% !important;
-  left: -6%;
-  top: 140px;
-  transform: rotate(-9deg);
+  position: absolute;
+  inset: 75px 0 50px;
+  height: calc(100% - 125px);
   filter: drop-shadow(0 34px 19px #001f3460);
   animation: float 6s ease-in-out infinite;
+}
+.hero-food .food-crop {
+  height: 100%;
 }
 .hero-sticker {
   width: 102px;
@@ -935,7 +946,7 @@ select:focus-visible {
 }
 .food-stage {
   height: 183px;
-  background: radial-gradient(ellipse at 50% 60%, #216773, #104d58);
+  background: #0a5f71;
   position: relative;
   display: flex;
   align-items: center;
@@ -943,7 +954,7 @@ select:focus-visible {
   overflow: hidden;
 }
 .food-stage:after {
-  content: "";
+  content: none;
   width: 150px;
   height: 150px;
   border: 1px solid #ffffff12;
@@ -954,20 +965,17 @@ select:focus-visible {
   pointer-events: none;
 }
 .food-stage .food-visual {
-  width: 92%;
+  width: calc(100% - 24px);
+  height: calc(100% - 24px);
   z-index: 1;
-  filter: drop-shadow(0 10px 8px #00162250);
+  filter: none;
   transition: transform 0.45s;
-  transform: rotate(-6deg);
 }
-/* The cut-outs range from 0.9:1 (lemonade) to 1.9:1 (fries). Width alone would
-   make the taller ones overflow this fixed-height stage and crop the dish, so
-   cap the height and let object-fit letterbox them instead. */
 .food-stage .food-crop {
-  max-height: 150px;
+  height: 100%;
 }
 .food-card:hover .food-visual {
-  transform: rotate(-3deg) scale(1.06);
+  transform: scale(1.04);
 }
 .food-stage .food-mezze,
 .food-stage .food-baba,
@@ -993,6 +1001,7 @@ select:focus-visible {
   width: 48%;
 }
 .food-stage-word {
+  display: none;
   position: absolute;
   top: 73px;
   left: 0;
@@ -1123,17 +1132,42 @@ select:focus-visible {
 }
 .family-art {
   position: relative;
+  min-width: 0;
   height: 385px;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px 28px 34px;
   background: radial-gradient(ellipse at 50% 60%, #287380, #0a505a);
 }
 .family-art > .food-visual {
-  width: 80%;
+  width: 100%;
+  height: 100%;
   filter: drop-shadow(0 18px 13px #002e4355);
-  transform: rotate(-6deg);
   z-index: 1;
+}
+.family-art .food-crop {
+  height: 100%;
+}
+.family-art > .food-family {
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1;
+}
+.food-family .food-crop {
+  border-radius: 8px;
+}
+/* The family banner follows its photo; menu frames use a shared brand colour. */
+.family-art[data-photo-background="matched"] {
+  background: var(--photo-background);
+}
+:is(.food-stage, .family-art, .product-modal-art)[data-photo-background="matched"] > .food-visual {
+  filter: none;
+}
+.food-stage[data-photo-background="matched"]:after,
+[data-photo-background="matched"] > .food-stage-word,
+[data-photo-background="matched"] > .family-art-word {
+  display: none;
 }
 .family-art-word {
   position: absolute;
@@ -1180,6 +1214,7 @@ select:focus-visible {
   color: var(--gold);
 }
 .family-copy {
+  min-width: 0;
   padding: 42px 48px 42px 28px;
 }
 .family-copy .eyebrow {
@@ -1242,25 +1277,13 @@ select:focus-visible {
   margin-top: 22px;
 }
 .story-visuals {
-  height: 210px;
+  height: auto;
   position: relative;
-  margin-top: -5px;
+  margin: 18px auto 12px;
 }
 .story-visuals > .food-rolls {
-  position: absolute;
-  width: 70%;
-  left: 10%;
-  top: 8%;
-  transform: rotate(-12deg);
+  width: 100%;
   filter: drop-shadow(0 16px 10px #233b3733);
-}
-.story-visuals > .food-mezze {
-  position: absolute;
-  width: 22%;
-  right: 4%;
-  top: 46%;
-  transform: rotate(7deg);
-  filter: drop-shadow(0 6px 7px #233b3733);
 }
 .story-art > p {
   text-align: center;
@@ -1675,14 +1698,14 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse, #287581, var(--dark));
+  background: #0a5f71;
   min-height: 390px;
+  padding: 24px;
   overflow: hidden;
 }
 .product-modal-art .food-visual {
-  width: 92%;
-  transform: rotate(-8deg);
-  filter: drop-shadow(0 14px 8px #00273177);
+  width: 100%;
+  filter: none;
 }
 .product-modal-art .food-mezze,
 .product-modal-art .food-baba,
@@ -1925,10 +1948,10 @@ footer {
 @keyframes float {
   0%,
   100% {
-    transform: translateY(0) rotate(-9deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translateY(-12px) rotate(-7deg);
+    transform: translateY(-8px);
   }
 }
 @keyframes spin {
@@ -2032,9 +2055,6 @@ footer {
     height: 400px;
     left: calc(50% - 200px);
   }
-  .hero-food {
-    top: 160px;
-  }
   .hero h1 {
     font-size: 105px;
   }
@@ -2062,9 +2082,6 @@ footer {
     height: 310px;
     width: 310px;
     left: calc(50% - 155px);
-  }
-  .hero-food {
-    top: 140px;
   }
   .hero-ring {
     height: 410px;
@@ -2169,11 +2186,6 @@ footer {
     width: 270px;
     left: calc(50% - 135px);
   }
-  .hero-food {
-    top: 137px;
-    width: 117% !important;
-    left: -10%;
-  }
   .hero-subtitle {
     font-size: 13px;
   }
@@ -2250,9 +2262,6 @@ footer {
     height: 330px;
     min-height: 330px;
   }
-  .family-art > .food-visual {
-    width: 93%;
-  }
   .family-art-word {
     font-size: 80px;
     left: 5px;
@@ -2283,9 +2292,6 @@ footer {
   }
   .story-topline {
     font-size: 6px;
-  }
-  .story-visuals {
-    height: 178px;
   }
   .story-copy > p:not(.eyebrow) {
     font-size: 11px;
@@ -2477,9 +2483,8 @@ footer {
     top: 35px;
   }
   .hero-food {
-    width: 110% !important;
-    left: -5%;
-    top: 110px;
+    inset: 60px 0 50px;
+    height: calc(100% - 110px);
   }
   .hero-ring {
     width: 310px;
@@ -2718,10 +2723,6 @@ footer {
     height: 320px;
     min-height: 320px;
   }
-  .family-art > .food-visual {
-    width: 76%;
-    max-width: 300px;
-  }
   .family-art-word {
     font-size: 98px;
     left: 15px;
@@ -2774,9 +2775,7 @@ footer {
     margin-top: 24px;
   }
   .story-visuals {
-    height: 190px;
     max-width: 350px;
-    margin: auto;
   }
   .story-copy h2 {
     font-size: 29px;
@@ -2947,14 +2946,11 @@ footer {
     height: 210px;
   }
   .product-modal-art .food-visual {
-    width: 70%;
+    height: 100%;
     max-width: 300px;
   }
-  .product-modal-art .food-family,
-  .product-modal-art .food-rolls,
-  .product-modal-art .food-plate {
-    width: 60%;
-    max-width: 235px;
+  .product-modal-art .food-crop {
+    height: 100%;
   }
   .product-modal-art .food-mezze,
   .product-modal-art .food-baba,
@@ -3089,9 +3085,6 @@ footer {
     height: 230px;
     left: calc(50% - 115px);
   }
-  .hero-food {
-    top: 111px;
-  }
   .hero-sticker {
     bottom: 17px;
   }
@@ -3148,10 +3141,6 @@ footer {
 .location-card:nth-child(2) .location-photo > img {
   top: 0;
   translate: 0 -25%;
-}
-.hero-food {
-  width: 103% !important;
-  left: -2%;
 }
 .hero-copy {
   min-width: 0;
@@ -3219,9 +3208,6 @@ footer {
 }
 .prices-note {
   font-size: 10px;
-}
-.food-stage .food-visual {
-  width: 88%;
 }
 .food-stage .food-mezze,
 .food-stage .food-baba,
@@ -3299,11 +3285,6 @@ footer {
   }
   .hero-location {
     font-size: 11px;
-  }
-  .hero-food {
-    width: 103% !important;
-    left: -2%;
-    top: 119px;
   }
   .food-info h3 {
     font-size: 13px;
