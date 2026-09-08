@@ -242,7 +242,9 @@ export default function App() {
                 <div className="hero-copy">
                   <p className="eyebrow">
                     <span className="little-star">✦</span>
-                    {t("eyebrow")}
+                    <span lang={locale === "en" ? "en" : "ar"} dir="auto">
+                      {t("eyebrow")}
+                    </span>
                   </p>
                   <h1>
                     {t("hero1")}
@@ -273,7 +275,7 @@ export default function App() {
                   <span className="hero-ring ring-two" />
                   <span className="hero-orbit">✳</span>
                   <span className="hero-arabic" lang="ar" dir="rtl">
-                    بصّح بنينة!
+                    مكتنساااش
                   </span>
                   <div className="hero-disc" />
                   <FoodVisual
@@ -311,7 +313,7 @@ export default function App() {
                   {t("scroll")}
                   <ArrowDown size={14} />
                 </a>
-                <span>بصّح بنينة!</span>
+                <span lang="ar" dir="rtl">شاورما هي لمعلومة</span>
               </div>
             </section>
             <div className="ticker" aria-hidden="true">
@@ -336,7 +338,7 @@ export default function App() {
                   <p>{t("menuDesc")}</p>
                 </div>
                 <span className="handwritten" lang="ar">
-                  بالصحة والراحة <span>↙</span>
+                  حس بالفرق <span>↙</span>
                 </span>
               </div>
               {content.loading ? (
@@ -504,7 +506,6 @@ export default function App() {
                       </Button>
                     </div>
                   )}
-                  <p className="prices-note">{t("pricesNote")}</p>
                 </>
               )}
             </section>
@@ -559,9 +560,9 @@ export default function App() {
                 <div className="story-visuals">
                   <FoodVisual kind="rolls" />
                 </div>
-                <p>{t("storyCaption")}</p>
+                <p lang="ar" dir="rtl">{t("storyCaption")}</p>
                 <div className="story-bottomline">
-                  ✦ &nbsp; LMA3LOUMA, C’EST TOUT. &nbsp; ✦
+                  ✦ &nbsp; LMA3LOUMA &nbsp; ✦
                 </div>
               </div>
               <div className="story-copy reveal">
@@ -708,7 +709,7 @@ export default function App() {
           </div>
           <div className="footer-tagline">
             <span lang="ar" dir="rtl">
-              بصّح بنينة!
+              لمعلومة مكتنساااش
             </span>
             <p>{t("footerTag")}</p>
           </div>

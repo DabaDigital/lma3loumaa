@@ -43,7 +43,11 @@ export const reviewCopy = {
   star: l("étoile", "star", "نجمة"),
   stars: l("étoiles", "stars", "نجوم"),
   fieldTitle: l("Titre", "Title", "العنوان"),
-  fieldDescription: l("Votre avis (facultatif)", "Your review (optional)", "رأيك (اختياري)"),
+  fieldDescription: l(
+    "Votre avis (facultatif)",
+    "Your review (optional)",
+    "رأيك (اختياري)",
+  ),
   titlePlaceholder: l(
     "Ce que vous avez aimé…",
     "What did you enjoy?",
@@ -63,6 +67,36 @@ export const reviewCopy = {
   removePhoto: l("Retirer la photo", "Remove photo", "إزالة الصورة"),
   submit: l("Envoyer mon avis", "Submit review", "إرسال رأيي"),
   sending: l("Envoi en cours…", "Submitting…", "جارٍ الإرسال…"),
+  captchaLoading: l(
+    "Chargement de la vérification…",
+    "Loading verification…",
+    "جارٍ تحميل التحقق…",
+  ),
+  captchaRequired: l(
+    "Veuillez terminer la vérification anti-robot.",
+    "Please complete the bot verification.",
+    "يرجى إكمال التحقق من أنك لست روبوتاً.",
+  ),
+  captchaUnavailable: l(
+    "La vérification est indisponible. Réessayez.",
+    "Verification is unavailable. Please retry.",
+    "التحقق غير متاح. يرجى المحاولة مجدداً.",
+  ),
+  dailyHelp: l(
+    "Deux avis par jour maximum par connexion Internet. Remise à zéro à minuit, heure de Casablanca.",
+    "Up to two reviews per day per internet connection. Resets at midnight, Casablanca time.",
+    "رأيان كحد أقصى يومياً لكل اتصال إنترنت. يتجدد الحد عند منتصف الليل بتوقيت الدار البيضاء.",
+  ),
+  dailyLimit: l(
+    "La limite de deux avis pour aujourd’hui est atteinte sur cette connexion. Réessayez demain. Si un envoi a été interrompu, attendez 10 minutes.",
+    "This connection has reached today's two-review limit. Try again tomorrow. If a submission was interrupted, wait 10 minutes.",
+    "وصل هذا الاتصال إلى حد رأيين لليوم. حاول غداً. إذا انقطع إرسال سابق، انتظر 10 دقائق.",
+  ),
+  submissionExpired: l(
+    "Votre session d’envoi a expiré. Vérifiez à nouveau et réessayez.",
+    "Your submission session expired. Verify again and retry.",
+    "انتهت مهلة الإرسال. أكمل التحقق وحاول مجدداً.",
+  ),
   success: l(
     "Merci ! Votre avis sera publié après validation.",
     "Thank you! Your review will appear after approval.",

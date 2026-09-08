@@ -1,4 +1,11 @@
 @font-face {
+  font-family: 'Baloo Bhaijaan 2';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/baloobhaijaan2/v21/zYXwKUwuEqdVGqM8tPDdAA_Y-_bMKo1EhQd2tWxo8Tx2TaP4.ttf) format('truetype');
+}
+@font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
   font-weight: 600;

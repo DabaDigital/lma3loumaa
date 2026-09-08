@@ -642,7 +642,7 @@
   letter-spacing: 2px;
 }
 .login-story h1 {
-  font-family: "Noto Sans Arabic", sans-serif;
+  font-family: "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
   text-align: start;
   font-size: 100px;
   line-height: 1.4;
@@ -1390,7 +1390,7 @@
 [dir="rtl"] .login-card h2,
 [dir="rtl"] .admin-editor-heading h2,
 [dir="rtl"] .admin-delete h2 {
-  font-family: "Noto Sans Arabic", sans-serif;
+  font-family: "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
   line-height: 1.7;
   font-size: 28px;
 }

@@ -203,9 +203,7 @@ export default function Admin() {
           <div>
             <span className="eyebrow">L’ESPRIT CASA, LE GOÛT LMA3LOUMA</span>
             <h1 lang="ar" dir="rtl">
-              بصّح
-              <br />
-              <em>بنينة!</em>
+              <em>مكتنساش!</em>
             </h1>
             <p>{t("intro")}</p>
           </div>

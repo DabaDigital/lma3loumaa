@@ -94,14 +94,24 @@ export async function setReviewStatus(
     throw error ?? new Error("Review was not updated");
 }
 
-export async function submitReview(
-  review: Pick<
-    Review,
-    "id" | "title" | "description" | "rating" | "image_path"
-  >,
-) {
-  if (!supabase) throw new Error("Reviews are not configured");
-  // No SELECT here: pending reviews cannot be read by visitors.
-  const { error } = await supabase.from("reviews").insert(review);
-  if (error) throw error;
+export type ReviewPreparation = {
+  id: string;
+  completed: boolean;
+  uploaded?: boolean;
+  upload?: { path: string; token: string };
+};
+
+export async function reviewRequest(
+  body: Record<string, unknown>,
+): Promise<ReviewPreparation> {
+  const response = await fetch("/api/reviews", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "UNAVAILABLE");
+  if (typeof data.id !== "string" || typeof data.completed !== "boolean")
+    throw new Error("UNAVAILABLE");
+  return data;
 }

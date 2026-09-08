@@ -282,6 +282,27 @@
   border-radius: 6px;
   margin-bottom: 16px;
 }
+.review-captcha {
+  min-width: 0;
+  margin-bottom: 18px;
+}
+.review-captcha > div:first-child {
+  max-width: 100%;
+}
+.review-captcha p,
+.review-daily-help {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #687e78;
+}
+.review-captcha button {
+  text-decoration: underline;
+  color: var(--teal);
+  padding: 8px 0;
+}
+.review-daily-help {
+  margin-block: 0 14px;
+}
 .review-success {
   text-align: center;
   padding: 28px 0;

@@ -1,4 +1,14 @@
 @font-face {
+  font-family: 'Naveid Arabic DEMO';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/assets/fonts/naveid-arabic-demo.extra-bold.otf) format('opentype');
+  /* Use the demo for Arabic letters; retain fallback glyphs for numbers. */
+  unicode-range: U+0600-065F, U+066A-06EF, U+06FA-06FF, U+0750-077F,
+    U+0870-089F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+}
+@font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
   font-weight: 600;

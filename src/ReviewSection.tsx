@@ -16,14 +16,15 @@ import { supabase } from "./supabase";
 import type { Locale } from "./data";
 import { ReviewPhoto } from "./ReviewPhoto";
 import {
-  REVIEW_BUCKET,
   REVIEW_IMAGE_TYPES,
   REVIEW_MAX_BYTES,
-  submitReview,
+  reviewRequest,
   useReviewList,
 } from "./reviews";
 import { reviewCopy } from "./reviewCopy";
 import { ContentSkeleton } from "./Skeleton";
+import { ReviewCaptcha } from "./ReviewCaptcha";
+import type { ReviewPreparation } from "./reviews";
 
 function ReviewForm({
   locale,
@@ -42,11 +43,17 @@ function ReviewForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [photoError, setPhotoError] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const sending = useRef(false);
-  const uploaded = useRef<{ file: File; id: string; path: string } | null>(
-    null,
-  );
+  const prepared = useRef<{
+    signature: string;
+    file: File | null;
+    data: ReviewPreparation;
+    uploaded: boolean;
+  } | null>(null);
   const attemptId = useRef(crypto.randomUUID());
   useEffect(() => {
     if (!file) {
@@ -94,40 +101,77 @@ function ReviewForm({
       setError(t("formError"));
       return;
     }
-    if (photoError) return;
+    if (photoError || dailyLimit) return;
+    const signature = JSON.stringify([
+      title.trim(),
+      description.trim(),
+      rating,
+    ]);
+    if (
+      prepared.current &&
+      (prepared.current.signature !== signature ||
+        prepared.current.file !== file)
+    ) {
+      prepared.current = null;
+      attemptId.current = crypto.randomUUID();
+    }
+    if (!prepared.current && !captchaToken) {
+      setError(t("captchaRequired"));
+      return;
+    }
     sending.current = true;
     setBusy(true);
     try {
-      let id: string = attemptId.current;
-      let image_path: string | null = null;
-      if (file) {
-        if (uploaded.current?.file === file) {
-          ({ id, path: image_path } = uploaded.current);
-        } else {
-          const extension =
-            file.type === "image/jpeg" ? "jpg" : file.type.split("/")[1];
-          image_path = `${id}/photo.${extension}`;
-          const { error: uploadError } = await supabase.storage
-            .from(REVIEW_BUCKET)
-            .upload(image_path, file, {
-              contentType: file.type,
-              upsert: false,
-              cacheControl: "0",
-            });
-          if (uploadError) throw uploadError;
-          uploaded.current = { file, id, path: image_path };
-        }
+      if (!prepared.current) {
+        const data = await reviewRequest({
+          action: "prepare",
+          id: attemptId.current,
+          title: title.trim(),
+          description: description.trim(),
+          rating,
+          imageType: file?.type ?? null,
+          imageSize: file?.size ?? 0,
+          captchaToken,
+        });
+        prepared.current = { signature, file, data, uploaded: !!data.uploaded };
       }
-      await submitReview({
-        id,
-        title: title.trim(),
-        description: description.trim(),
-        rating,
-        image_path,
-      });
+      const submission = prepared.current;
+      if (submission.data.completed) {
+        setSuccess(true);
+        return;
+      }
+      if (file && !submission.uploaded) {
+        if (!submission.data.upload) throw new Error("UNAVAILABLE");
+        const { path, token } = submission.data.upload;
+        const { error: uploadError } = await supabase.storage
+          .from("review-uploads")
+          .uploadToSignedUrl(path, token, file, {
+            contentType: file.type,
+            cacheControl: "0",
+          });
+        if (uploadError) {
+          // The upload may have reached Storage even if its response was lost.
+          // Ask the verified endpoint to recover the same immutable attempt.
+          prepared.current = null;
+          throw uploadError;
+        }
+        submission.uploaded = true;
+      }
+      await reviewRequest({ action: "complete", id: submission.data.id });
       setSuccess(true);
-    } catch {
-      setError(t("sendError"));
+    } catch (cause) {
+      const code = cause instanceof Error ? cause.message : "";
+      if (code === "DAILY_LIMIT") {
+        setDailyLimit(true);
+        setError(t("dailyLimit"));
+      } else if (code === "CAPTCHA_FAILED") setError(t("captchaRequired"));
+      else if (code === "EXPIRED" || code === "CONFLICT") {
+        prepared.current = null;
+        attemptId.current = crypto.randomUUID();
+        setError(t("submissionExpired"));
+      } else setError(t("sendError"));
+      setCaptchaToken("");
+      setCaptchaReset((n) => n + 1);
     } finally {
       sending.current = false;
       setBusy(false);
@@ -248,6 +292,14 @@ function ReviewForm({
                   {error}
                 </p>
               )}
+              <p className="review-daily-help">{t("dailyHelp")}</p>
+              {supabase && (
+                <ReviewCaptcha
+                  locale={locale}
+                  reset={captchaReset}
+                  onToken={setCaptchaToken}
+                />
+              )}
               {!supabase && (
                 <p className="review-error" role="status">
                   {t("unavailable")}
@@ -255,7 +307,7 @@ function ReviewForm({
               )}
               <Button
                 type="submit"
-                disabled={!supabase || busy || photoError}
+                disabled={!supabase || busy || photoError || dailyLimit}
                 className="full-width"
               >
                 {busy ? t("sending") : t("submit")}

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { categories, items, locations } from "../../src/data";
+import { mockCaptcha } from "./review-protection-mock";
 
 const PHOTO = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
@@ -29,6 +30,8 @@ function review(overrides: Partial<Review> = {}): Review {
   };
 }
 async function backend(page: Page, initial: Review[] = []) {
+  await mockCaptcha(page);
+  const prepared = new Map<string, Record<string, unknown>>();
   const state = {
     reviews: initial,
     inserts: [] as Record<string, unknown>[],
@@ -39,6 +42,40 @@ async function backend(page: Page, initial: Review[] = []) {
     insertFails: false,
     leakUnapproved: false,
   };
+  await page.route("**/api/reviews", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    const body = route.request().postDataJSON();
+    if (body.action === "prepare") {
+      if (body.captchaToken !== "test-captcha-token")
+        return route.fulfill({
+          status: 400,
+          json: { error: "CAPTCHA_FAILED" },
+        });
+      const extension =
+        body.imageType === "image/jpeg" ? "jpg" : body.imageType?.split("/")[1];
+      const path = extension ? `${body.id}/photo.${extension}` : null;
+      prepared.set(body.id, {
+        id: body.id,
+        title: body.title,
+        description: body.description,
+        rating: body.rating,
+        image_path: path,
+      });
+      return route.fulfill({
+        json: {
+          id: body.id,
+          completed: false,
+          ...(path ? { upload: { path, token: "test-upload-token" } } : {}),
+        },
+      });
+    }
+    const row = prepared.get(body.id)!;
+    state.inserts.push(row);
+    if (state.insertFails)
+      return route.fulfill({ status: 503, json: { error: "UNAVAILABLE" } });
+    state.reviews.push(review({ ...row, status: "pending" }));
+    return route.fulfill({ json: { id: body.id, completed: true } });
+  });
   const content: Record<string, unknown[]> = {
     categories: categories
       .filter((entry) => entry.id !== "all")
@@ -62,7 +99,7 @@ async function backend(page: Page, initial: Review[] = []) {
         state.downloads.push(url.pathname);
         return route.fulfill({ contentType: "image/png", body: PHOTO });
       }
-      if (request.method() === "POST") {
+      if (request.method() === "POST" || request.method() === "PUT") {
         state.uploads.push(url.pathname);
         return state.uploadFails
           ? route.fulfill({
@@ -115,8 +152,12 @@ async function openForm(page: Page) {
     .click();
   const dialog = page.getByRole("dialog");
   await expect(
-    dialog.getByRole("heading", { name: "Partagez votre expérience", level: 3 }),
+    dialog.getByRole("heading", {
+      name: "Partagez votre expérience",
+      level: 3,
+    }),
   ).toBeVisible();
+  await expect(dialog.getByText("CAPTCHA test widget")).toBeVisible();
   return dialog;
 }
 async function fillReview(page: Page, title = "Un repas formidable") {
@@ -128,14 +169,79 @@ async function fillReview(page: Page, title = "Un repas formidable") {
   await dialog.getByRole("radio", { name: "5 étoiles", exact: true }).check();
 }
 
-test("review form supports keyboard stars and Arabic on narrow screens", async ({ page }) => {
+test("CAPTCHA expiry blocks submission and a third review is refused after reload", async ({
+  page,
+}) => {
+  const state = await backend(page);
+  let requests = 0;
+  await page.route("**/api/reviews", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    requests++;
+    if (state.reviews.length >= 2)
+      return route.fulfill({ status: 429, json: { error: "DAILY_LIMIT" } });
+    return route.fallback();
+  });
+  let directWrites = 0;
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      request.url().includes("/rest/v1/reviews")
+    )
+      directWrites++;
+  });
+  let dialog = await openForm(page);
+  await fillReview(page);
+  await page.evaluate(() => {
+    const captcha = (
+      window as unknown as { testCaptchaOptions: Record<string, () => void> }
+    ).testCaptchaOptions;
+    captcha["expired-callback"]();
+  });
+  await dialog
+    .getByRole("button", { name: "Envoyer mon avis", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toHaveText(
+    "Veuillez terminer la vérification anti-robot.",
+  );
+  expect(requests).toBe(0);
+  await page.keyboard.press("Escape");
+  for (const n of [1, 2]) {
+    dialog = await openForm(page);
+    await fillReview(page, `Avis ${n}`);
+    await dialog
+      .getByRole("button", { name: "Envoyer mon avis", exact: true })
+      .click();
+    await expect(page.getByText(SUCCESS, { exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+  }
+  dialog = await openForm(page);
+  await fillReview(page, "Troisième avis");
+  await dialog
+    .getByRole("button", { name: "Envoyer mon avis", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText(
+    "La limite de deux avis",
+  );
+  await expect(page.getByText(SUCCESS, { exact: true })).toHaveCount(0);
+  expect(state.reviews).toHaveLength(2);
+  expect(directWrites).toBe(0);
+});
+
+test("review form supports keyboard stars and Arabic on narrow screens", async ({
+  page,
+}) => {
   await backend(page);
   const dialog = await openForm(page);
-  const firstStar = dialog.getByRole("radio", { name: "1 étoile", exact: true });
+  const firstStar = dialog.getByRole("radio", {
+    name: "1 étoile",
+    exact: true,
+  });
   await firstStar.focus();
   await firstStar.press("Space");
   await firstStar.press("ArrowRight");
-  await expect(dialog.getByRole("radio", { name: "2 étoiles", exact: true })).toBeChecked();
+  await expect(
+    dialog.getByRole("radio", { name: "2 étoiles", exact: true }),
+  ).toBeChecked();
   await dialog.screenshot({ path: "test-results/review-form-desktop.png" });
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Langue", exact: true }).click();
@@ -146,8 +252,14 @@ test("review form supports keyboard stars and Arabic on narrow screens", async (
     await page.getByRole("button", { name: "أضف رأيك", exact: true }).click();
     const form = page.getByRole("dialog");
     await expect(form.getByLabel("العنوان", { exact: true })).toBeVisible();
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    expect(await form.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    expect(await form.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(
+      true,
+    );
     await form.screenshot({ path: `test-results/review-form-ar-${width}.png` });
     await page.keyboard.press("Escape");
   }
@@ -240,7 +352,7 @@ test("a guest submits a photo review with a server-moderated status and it stays
   expect(row.id).toMatch(/^[0-9a-f-]{36}$/);
   expect(row.image_path).toBe(`${row.id}/photo.png`);
   expect(state.uploads[0]).toBe(
-    `/storage/v1/object/review-images/${row.image_path}`,
+    `/storage/v1/object/upload/sign/review-uploads/${row.image_path}`,
   );
   await page.reload();
   await expect(page.locator("#reviews")).toBeVisible();
@@ -302,19 +414,30 @@ test("rating, trimmed text and photo validation prevent invalid submissions", as
 });
 
 for (const description of ["", "good"]) {
-  test(`only rating and title are required (description: ${description || "empty"})`, async ({ page }) => {
+  test(`only rating and title are required (description: ${description || "empty"})`, async ({
+    page,
+  }) => {
     const state = await backend(page);
     const dialog = await openForm(page);
     await dialog.getByLabel("Titre", { exact: true }).fill("A");
     await dialog.getByRole("radio", { name: "5 étoiles", exact: true }).check();
-    const reviewText = dialog.getByLabel("Votre avis (facultatif)", { exact: true });
+    const reviewText = dialog.getByLabel("Votre avis (facultatif)", {
+      exact: true,
+    });
     await expect(reviewText).not.toHaveAttribute("required", "");
     await reviewText.fill(description);
-    await dialog.getByRole("button", { name: "Envoyer mon avis", exact: true }).click();
+    await dialog
+      .getByRole("button", { name: "Envoyer mon avis", exact: true })
+      .click();
     await expect(page.getByText(SUCCESS, { exact: true })).toBeVisible();
     expect(state.uploads).toHaveLength(0);
     expect(state.inserts).toHaveLength(1);
-    expect(state.inserts[0]).toMatchObject({ title: "A", rating: 5, description, image_path: null });
+    expect(state.inserts[0]).toMatchObject({
+      title: "A",
+      rating: 5,
+      description,
+      image_path: null,
+    });
   });
 }
 

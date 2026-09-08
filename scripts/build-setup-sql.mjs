@@ -56,6 +56,8 @@ writeFileSync(
       .join("") +
     section("Review photos — review-storage.sql") +
     read("../supabase/review-storage.sql") +
+    section("Protected reviews — review-protection.sql") +
+    read("../supabase/review-protection.sql") +
     section("Content — seed.sql") +
     read("../supabase/seed.sql") +
     section("Admin access") +

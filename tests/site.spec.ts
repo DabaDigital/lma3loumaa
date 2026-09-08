@@ -5,7 +5,7 @@ test("menu search, categories, prices and product options work", async ({
 }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "SHAWARMA",
+    "LMA3LOUMA",
   );
   await page.getByRole("searchbox").fill("citronnade");
   await expect(page.locator(".food-card")).toHaveCount(1);
@@ -64,7 +64,7 @@ test("all languages persist and Arabic uses RTL", async ({ page }) => {
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "الشاورما",
+    "لمعلومة",
   );
   await page.getByRole("searchbox").fill("الشمندر");
   await expect(page.locator(".food-card")).toHaveCount(1);
