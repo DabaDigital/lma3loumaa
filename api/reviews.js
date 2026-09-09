@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createHmac, randomUUID } from "node:crypto";
 import { isIP } from "node:net";
+import { reviewConfig } from "../server/review-config.js";
 
 const UUID =
   /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
@@ -9,35 +10,27 @@ const json = (body, status = 200) =>
   Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 const failure = (code, status) => json({ error: code }, status);
 
-function config(env) {
-  const key = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-  const url = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-  const siteKey = env.TURNSTILE_SITE_KEY;
-  const secret = env.TURNSTILE_SECRET_KEY;
-  const hosts = (env.REVIEW_ALLOWED_HOSTNAMES || "")
-    .split(",")
-    .map((h) => h.trim().toLowerCase())
-    .filter(Boolean);
-  if (!url || !key || !siteKey || !secret || !hosts.length) return null;
-  // Published Turnstile testing keys are never accepted in production.
-  if (
-    env.VERCEL_ENV === "production" &&
-    (/^[123]x0+/.test(siteKey) || /^[123]x0+/.test(secret))
-  )
-    return null;
-  return { key, url, siteKey, secret, hosts };
-}
-
 export function createReviewHandler({
   env = process.env,
   fetcher = fetch,
   clientFactory = createClient,
+  logConfigurationError = (issues) =>
+    console.error("Reviews configuration:", issues.join("; ")),
 } = {}) {
+  let lastConfigError = "";
   return async function handle(request) {
     if (!["GET", "POST"].includes(request.method))
       return failure("METHOD_NOT_ALLOWED", 405);
-    const settings = config(env);
-    if (!settings) return failure("UNAVAILABLE", 503);
+    const { settings, issues } = reviewConfig(env);
+    if (!settings) {
+      const diagnostic = issues.join("; ");
+      if (diagnostic !== lastConfigError) {
+        lastConfigError = diagnostic;
+        logConfigurationError(issues);
+      }
+      return failure("UNAVAILABLE", 503);
+    }
+    lastConfigError = "";
     if (request.method === "GET") return json({ siteKey: settings.siteKey });
     // This route must be deployed directly on Vercel. Never trust a client JSON
     // field or a generic proxy chain as the visitor identity.

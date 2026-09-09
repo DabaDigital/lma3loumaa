@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createReviewHandler } from "../api/reviews.js";
+import { reviewConfig } from "../server/review-config.js";
 const id = "10000000-0000-4000-8000-000000000001";
 const env = {
   VERCEL: "1",
@@ -209,4 +210,50 @@ for (const settings of [
 }
 console.log(
   "PASS: server CAPTCHA validation, hostname/action checks, trusted IP identity, validation, staging uploads, quota errors, retries, and fail-closed configuration.",
+);
+
+const diagnostics = [];
+const incompleteEnv = { ...env, SUPABASE_SECRET_KEY: "   " };
+const incomplete = createReviewHandler({
+  env: incompleteEnv,
+  logConfigurationError: (issues) => diagnostics.push(issues),
+});
+for (let attempt = 0; attempt < 2; attempt++) {
+  const response = await incomplete(
+    new Request("https://example.com/api/reviews"),
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), { error: "UNAVAILABLE" });
+}
+assert.equal(diagnostics.length, 1, "retries do not flood logs");
+assert.deepEqual(diagnostics[0], [
+  "Set SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY)",
+]);
+assert.ok(!JSON.stringify(diagnostics).includes(env.TURNSTILE_SECRET_KEY));
+incompleteEnv.SUPABASE_SECRET_KEY = "  server-only-key  ";
+const recovered = await incomplete(
+  new Request("https://example.com/api/reviews"),
+);
+assert.equal(recovered.status, 200);
+assert.deepEqual(await recovered.json(), { siteKey: env.TURNSTILE_SITE_KEY });
+assert.equal(reviewConfig(incompleteEnv).settings.key, "server-only-key");
+for (const override of [
+  { SUPABASE_SECRET_KEY: "sb_publishable_wrong_key" },
+  { TURNSTILE_SECRET_KEY: " 1x0000000000000000000000000000000AA " },
+  { REVIEW_ALLOWED_HOSTNAMES: "https://example.com" },
+  { REVIEW_ALLOWED_HOSTNAMES: "example.com/path" },
+  { REVIEW_ALLOWED_HOSTNAMES: "example.com:3000" },
+  { SUPABASE_URL: "not a URL" },
+])
+  assert.equal(reviewConfig({ ...env, ...override }).settings, null);
+assert.equal(
+  reviewConfig({
+    ...env,
+    SUPABASE_SECRET_KEY: "",
+    SUPABASE_SERVICE_ROLE_KEY: "legacy-server-key",
+  }).settings.key,
+  "legacy-server-key",
+);
+console.log(
+  "PASS: missing server-key diagnosis, safe logs, whitespace normalization, configuration recovery, and invalid settings rejected.",
 );

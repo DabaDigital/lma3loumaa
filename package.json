@@ -12,6 +12,7 @@
     "test:database": "node tests/database.mjs",
     "test:reviews:database": "node tests/reviews-database.mjs",
     "test:reviews:protection": "node tests/review-protection-api.mjs && node tests/review-protection-database.mjs",
+    "check:reviews": "node scripts/check-review-config.mjs",
     "seed:generate": "node scripts/generate-seed.mjs",
     "db:setup": "node scripts/build-setup-sql.mjs"
   },
