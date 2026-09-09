@@ -169,6 +169,47 @@ async function fillReview(page: Page, title = "Un repas formidable") {
   await dialog.getByRole("radio", { name: "5 étoiles", exact: true }).check();
 }
 
+test("review form loads on demand and stays dismissible while downloading", async ({
+  page,
+}) => {
+  await backend(page);
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  let requested = false;
+  let release!: () => void;
+  const download = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(
+    /\/ReviewForm(?:\.tsx|-[^/]+\.js)(?:\?.*)?$/,
+    async (route) => {
+      requested = true;
+      await download;
+      await route.continue();
+    },
+  );
+  await page.goto("/");
+  const open = page.getByRole("button", {
+    name: "Donner mon avis",
+    exact: true,
+  });
+  await expect(open).toBeVisible();
+  expect(requested).toBe(false);
+  await open.click();
+  await expect.poll(() => requested).toBe(true);
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("status")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  release();
+  await open.click();
+  await expect(dialog.getByLabel("Titre", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("CAPTCHA test widget")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(open).toBeFocused();
+  expect(errors).toEqual([]);
+});
+
 test("CAPTCHA expiry blocks submission and a third review is refused after reload", async ({
   page,
 }) => {

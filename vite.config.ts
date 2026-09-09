@@ -3,6 +3,32 @@ import react from "@vitejs/plugin-react";
 import { createReviewHandler } from "./api/reviews.js";
 
 export default defineConfig(({ mode }) => ({
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            // Keep framework dependencies together and cache them across app edits.
+            {
+              name: "react-vendor",
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+              priority: 30,
+            },
+            {
+              name: "supabase-vendor",
+              test: /node_modules[\\/]@supabase[\\/]/,
+              priority: 20,
+            },
+            {
+              name: "i18n-vendor",
+              test: /node_modules[\\/](?:i18next|react-i18next)[\\/]/,
+              priority: 10,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     {

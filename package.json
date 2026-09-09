@@ -9,6 +9,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "test": "playwright test",
     "test:admin": "playwright test -c playwright.admin.config.ts",
+    "test:production": "playwright test -c playwright.production.config.ts",
     "test:database": "node tests/database.mjs",
     "test:reviews:database": "node tests/reviews-database.mjs",
     "test:reviews:protection": "node tests/review-protection-api.mjs && node tests/review-protection-database.mjs",
