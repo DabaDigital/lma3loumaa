@@ -1,4 +1,3 @@
-@import url("/assets/fonts.css");
 .content-status {
   padding: 20px;
   display: flex;
@@ -24,7 +23,8 @@
   --cream: #fcfaf5;
   --muted: #6a7773;
   --line: #dedfd5;
-  --display: "Barlow Condensed", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
+  --display:
+    "Barlow Condensed", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
   scroll-behavior: smooth;
   scroll-padding-top: 110px;
 }
@@ -541,6 +541,11 @@ select:focus-visible {
 }
 .hero-food .food-crop {
   height: 100%;
+}
+.hero[data-animation-paused="true"] .hero-food,
+.hero[data-animation-paused="true"] .hero-orbit,
+.ticker[data-animation-paused="true"] > div {
+  animation-play-state: paused;
 }
 .hero-sticker {
   width: 102px;
@@ -1169,7 +1174,12 @@ select:focus-visible {
 .family-art[data-photo-background="matched"] {
   background: var(--photo-background);
 }
-:is(.food-stage, .family-art, .product-modal-art)[data-photo-background="matched"] > .food-visual {
+:is(
+    .food-stage,
+    .family-art,
+    .product-modal-art
+  )[data-photo-background="matched"]
+  > .food-visual {
   filter: none;
 }
 .food-stage[data-photo-background="matched"]:after,

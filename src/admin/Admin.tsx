@@ -81,11 +81,13 @@ export default function Admin() {
   }, [locale]);
   useEffect(() => {
     if (!supabase) return;
-    const check = async (next: User | null) => {
+    const check = async (next: User | null, reset: boolean) => {
       const version = ++authVersion.current;
       setUser(next);
-      setAllowed(false);
-      setChecking(true);
+      if (reset) {
+        setAllowed(false);
+        setChecking(true);
+      }
       try {
         if (next) {
           const { data, error } = await supabase!
@@ -103,14 +105,30 @@ export default function Admin() {
       }
     };
     let active = true;
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setChecking(true);
-      window.setTimeout(() => {
-        if (active) void check(session?.user ?? null);
+    let currentUser: string | null | undefined;
+    let checkTimer: number | undefined;
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const next = session?.user ?? null;
+      const reset =
+        currentUser === undefined ||
+        currentUser !== (next?.id ?? null) ||
+        event === "SIGNED_OUT";
+      currentUser = next?.id ?? null;
+      authVersion.current++;
+      if (reset) {
+        setAllowed(false);
+        setChecking(true);
+      }
+      // Revalidate membership on every auth event, but keep the same user's
+      // editor mounted while that background check is pending.
+      window.clearTimeout(checkTimer);
+      checkTimer = window.setTimeout(() => {
+        if (active) void check(next, reset);
       }, 0);
     });
     return () => {
       active = false;
+      window.clearTimeout(checkTimer);
       authVersion.current++;
       data.subscription.unsubscribe();
     };

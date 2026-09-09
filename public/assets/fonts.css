@@ -3,7 +3,7 @@
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url(/assets/fonts/naveid-arabic-demo.extra-bold.otf) format('opentype');
+  src: url(/assets/fonts/naveid-arabic-demo.extra-bold.woff2) format('woff2');
   /* Use the demo for Arabic letters; retain fallback glyphs for numbers. */
   unicode-range: U+0600-065F, U+066A-06EF, U+06FA-06FF, U+0750-077F,
     U+0870-089F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
@@ -13,63 +13,63 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url(/assets/fonts/font-0.ttf) format('truetype');
+  src: url(/assets/fonts/font-0.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url(/assets/fonts/font-1.ttf) format('truetype');
+  src: url(/assets/fonts/font-1.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url(/assets/fonts/font-2.ttf) format('truetype');
+  src: url(/assets/fonts/font-2.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
   font-weight: 900;
   font-display: swap;
-  src: url(/assets/fonts/font-3.ttf) format('truetype');
+  src: url(/assets/fonts/font-3.woff2) format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url(/assets/fonts/font-4.ttf) format('truetype');
+  src: url(/assets/fonts/font-4.woff2) format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url(/assets/fonts/font-5.ttf) format('truetype');
+  src: url(/assets/fonts/font-5.woff2) format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url(/assets/fonts/font-6.ttf) format('truetype');
+  src: url(/assets/fonts/font-6.woff2) format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url(/assets/fonts/font-7.ttf) format('truetype');
+  src: url(/assets/fonts/font-7.woff2) format('woff2');
 }
 @font-face {
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 800;
   font-display: swap;
-  src: url(/assets/fonts/font-8.ttf) format('truetype');
+  src: url(/assets/fonts/font-8.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -77,7 +77,7 @@
   font-weight: 400;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-9.ttf) format('truetype');
+  src: url(/assets/fonts/font-9.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -85,7 +85,7 @@
   font-weight: 500;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-10.ttf) format('truetype');
+  src: url(/assets/fonts/font-10.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -93,7 +93,7 @@
   font-weight: 600;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-11.ttf) format('truetype');
+  src: url(/assets/fonts/font-11.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -101,7 +101,7 @@
   font-weight: 700;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-12.ttf) format('truetype');
+  src: url(/assets/fonts/font-12.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -109,7 +109,7 @@
   font-weight: 800;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-13.ttf) format('truetype');
+  src: url(/assets/fonts/font-13.woff2) format('woff2');
 }
 @font-face {
   font-family: 'Noto Sans Arabic';
@@ -117,6 +117,6 @@
   font-weight: 900;
   font-stretch: normal;
   font-display: swap;
-  src: url(/assets/fonts/font-14.ttf) format('truetype');
+  src: url(/assets/fonts/font-14.woff2) format('woff2');
 }
 

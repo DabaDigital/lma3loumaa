@@ -39,8 +39,11 @@ export function useReviewList(admin = false) {
         rows.push(...((result.data ?? []) as Review[]));
         if ((result.data?.length ?? 0) < pageSize) break;
       }
-      setReviews(
-        admin ? rows : rows.filter((row) => row.status === "approved"),
+      const next = admin
+        ? rows
+        : rows.filter((row) => row.status === "approved");
+      setReviews((previous) =>
+        JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
       );
       setError(false);
     } catch {
@@ -54,22 +57,33 @@ export function useReviewList(admin = false) {
   }, [admin]);
   useEffect(() => {
     let active = true;
+    let authUser: string | null | undefined;
+    let authTimer: number | undefined;
     void refresh();
     const onFocus = () => void refresh();
     window.addEventListener("focus", onFocus);
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 15000);
-    const auth = supabase?.auth.onAuthStateChange(() => {
+    const auth = supabase?.auth.onAuthStateChange((event, session) => {
+      const user = session?.user.id ?? null;
+      const sameUser = user === authUser;
+      authUser = user;
+      if (event === "INITIAL_SESSION" || (event === "SIGNED_IN" && sameUser))
+        return;
       version.current++;
-      setReviews([]);
-      setLoading(true);
-      window.setTimeout(() => {
+      if (!sameUser || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        setReviews([]);
+        setLoading(true);
+      }
+      window.clearTimeout(authTimer);
+      authTimer = window.setTimeout(() => {
         if (active) void refresh();
       }, 0);
     });
     return () => {
       active = false;
+      window.clearTimeout(authTimer);
       version.current++;
       window.removeEventListener("focus", onFocus);
       window.clearInterval(timer);

@@ -1,0 +1,164 @@
+{
+  "/assets/family-box-web.png": {
+    "src": "/assets/optimized/family-box-web-1254-bfc396b45265.webp",
+    "srcSet": "/assets/optimized/family-box-web-384-c2fa60007a42.webp 384w, /assets/optimized/family-box-web-768-f86dd85271a4.webp 768w, /assets/optimized/family-box-web-1254-bfc396b45265.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/lma3louma-logo.png": {
+    "src": "/assets/optimized/lma3louma-logo-384-e2337d6152fd.webp",
+    "srcSet": "/assets/optimized/lma3louma-logo-128-1258965d4329.webp 128w, /assets/optimized/lma3louma-logo-256-fdf562dc76e6.webp 256w, /assets/optimized/lma3louma-logo-384-e2337d6152fd.webp 384w",
+    "width": 1774,
+    "height": 887
+  },
+  "/assets/lma3loumaa_calefornie.png": {
+    "src": "/assets/optimized/lma3loumaa-calefornie-1280-abdb96216837.webp",
+    "srcSet": "/assets/optimized/lma3loumaa-calefornie-384-c6b6cda5852a.webp 384w, /assets/optimized/lma3loumaa-calefornie-768-8b267014e14b.webp 768w, /assets/optimized/lma3loumaa-calefornie-1280-abdb96216837.webp 1280w",
+    "width": 1672,
+    "height": 941
+  },
+  "/assets/lma3loumaa_maarif.png": {
+    "src": "/assets/optimized/lma3loumaa-maarif-1280-151883fd0e52.webp",
+    "srcSet": "/assets/optimized/lma3loumaa-maarif-384-18b9ce056297.webp 384w, /assets/optimized/lma3loumaa-maarif-768-654a7d8ed2a7.webp 768w, /assets/optimized/lma3loumaa-maarif-1280-151883fd0e52.webp 1280w",
+    "width": 1672,
+    "height": 941
+  },
+  "/assets/menu/baba ghanosh.png": {
+    "src": "/assets/optimized/baba-ghanosh-1254-868b31fc64c0.webp",
+    "srcSet": "/assets/optimized/baba-ghanosh-384-2b0dd71e25b7.webp 384w, /assets/optimized/baba-ghanosh-768-1006172d35eb.webp 768w, /assets/optimized/baba-ghanosh-1254-868b31fc64c0.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/Boisson.png": {
+    "src": "/assets/optimized/boisson-1254-e062b440184e.webp",
+    "srcSet": "/assets/optimized/boisson-384-ffad9e699a01.webp 384w, /assets/optimized/boisson-768-b1e5202dae08.webp 768w, /assets/optimized/boisson-1254-e062b440184e.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/cheddar.png": {
+    "src": "/assets/optimized/cheddar-1254-d083edcbae35.webp",
+    "srcSet": "/assets/optimized/cheddar-384-f351514d4314.webp 384w, /assets/optimized/cheddar-768-b5d4877aae0c.webp 768w, /assets/optimized/cheddar-1254-d083edcbae35.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/cheddar_jalapenos.png": {
+    "src": "/assets/optimized/cheddar-jalapenos-1254-6bb450b08c21.webp",
+    "srcSet": "/assets/optimized/cheddar-jalapenos-384-15081ea36c7d.webp 384w, /assets/optimized/cheddar-jalapenos-768-94d48c99a636.webp 768w, /assets/optimized/cheddar-jalapenos-1254-6bb450b08c21.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/family_box.png": {
+    "src": "/assets/optimized/family-box-1254-e7f8823f4ff4.webp",
+    "srcSet": "/assets/optimized/family-box-384-ac7646d3687d.webp 384w, /assets/optimized/family-box-768-4ceee63a3d2e.webp 768w, /assets/optimized/family-box-1254-e7f8823f4ff4.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/Fries.png": {
+    "src": "/assets/optimized/fries-1280-f4269e3954ca.webp",
+    "srcSet": "/assets/optimized/fries-384-3dbe53bf287a.webp 384w, /assets/optimized/fries-768-ed4825ee0cbc.webp 768w, /assets/optimized/fries-1280-f4269e3954ca.webp 1280w",
+    "width": 1448,
+    "height": 1086
+  },
+  "/assets/menu/Fries_drink.png": {
+    "src": "/assets/optimized/fries-drink-1254-3a50d588c7e0.webp",
+    "srcSet": "/assets/optimized/fries-drink-384-e90f068d5494.webp 384w, /assets/optimized/fries-drink-768-bd255ef089f9.webp 768w, /assets/optimized/fries-drink-1254-3a50d588c7e0.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/houmous shawarma.png": {
+    "src": "/assets/optimized/houmous-shawarma-1254-7e013abc6826.webp",
+    "srcSet": "/assets/optimized/houmous-shawarma-384-e03ac8f66d0e.webp 384w, /assets/optimized/houmous-shawarma-768-10a1750a16eb.webp 768w, /assets/optimized/houmous-shawarma-1254-7e013abc6826.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/Houmous.png": {
+    "src": "/assets/optimized/houmous-1254-3645f9b20ef2.webp",
+    "srcSet": "/assets/optimized/houmous-384-e7aef44ea33b.webp 384w, /assets/optimized/houmous-768-c0d4275ceca2.webp 768w, /assets/optimized/houmous-1254-3645f9b20ef2.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/jalapenos.png": {
+    "src": "/assets/optimized/jalapenos-1254-54a7045d2353.webp",
+    "srcSet": "/assets/optimized/jalapenos-384-aba652817a41.webp 384w, /assets/optimized/jalapenos-768-d2723cd701dc.webp 768w, /assets/optimized/jalapenos-1254-54a7045d2353.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/Lemonade.png": {
+    "src": "/assets/optimized/lemonade-1254-2a281c6b7f84.webp",
+    "srcSet": "/assets/optimized/lemonade-384-a436d97ca2f9.webp 384w, /assets/optimized/lemonade-768-d365cc9cf0bd.webp 768w, /assets/optimized/lemonade-1254-2a281c6b7f84.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/lmaaloma.png": {
+    "src": "/assets/optimized/lmaaloma-1254-4e69a83ad58d.webp",
+    "srcSet": "/assets/optimized/lmaaloma-384-8251a13dd450.webp 384w, /assets/optimized/lmaaloma-768-8b1fdb9fda10.webp 768w, /assets/optimized/lmaaloma-1254-4e69a83ad58d.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/mahalabia.jpg": {
+    "src": "/assets/optimized/mahalabia-1254-daa09c9a299c.webp",
+    "srcSet": "/assets/optimized/mahalabia-384-624ffa96ad63.webp 384w, /assets/optimized/mahalabia-768-08659629624c.webp 768w, /assets/optimized/mahalabia-1254-daa09c9a299c.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/mahalabia_dubai.jpg": {
+    "src": "/assets/optimized/mahalabia-dubai-1254-a72ca2fe9358.webp",
+    "srcSet": "/assets/optimized/mahalabia-dubai-384-651dcf477735.webp 384w, /assets/optimized/mahalabia-dubai-768-c85eb9bd1d68.webp 768w, /assets/optimized/mahalabia-dubai-1254-a72ca2fe9358.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/mexicaine.png": {
+    "src": "/assets/optimized/mexicaine-1254-3809be59fc86.webp",
+    "srcSet": "/assets/optimized/mexicaine-384-df88976553b1.webp 384w, /assets/optimized/mexicaine-768-7a50625794dc.webp 768w, /assets/optimized/mexicaine-1254-3809be59fc86.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/moutabal.png": {
+    "src": "/assets/optimized/moutabal-1254-288ce0938676.webp",
+    "srcSet": "/assets/optimized/moutabal-384-52a91daf2232.webp 384w, /assets/optimized/moutabal-768-c20c224d606f.webp 768w, /assets/optimized/moutabal-1254-288ce0938676.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/muhammara.png": {
+    "src": "/assets/optimized/muhammara-1254-1fc2771ee477.webp",
+    "srcSet": "/assets/optimized/muhammara-384-a364a61931c4.webp 384w, /assets/optimized/muhammara-768-62bbf78c5751.webp 768w, /assets/optimized/muhammara-1254-1fc2771ee477.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/plats_shawarma.png": {
+    "src": "/assets/optimized/plats-shawarma-1254-9e4acbe13b7d.webp",
+    "srcSet": "/assets/optimized/plats-shawarma-384-39dd6ae650c4.webp 384w, /assets/optimized/plats-shawarma-768-1b8a2a1ade0e.webp 768w, /assets/optimized/plats-shawarma-1254-9e4acbe13b7d.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/shawarma_rolls.png": {
+    "src": "/assets/optimized/shawarma-rolls-1254-b6627c76ad80.webp",
+    "srcSet": "/assets/optimized/shawarma-rolls-384-52929355cea6.webp 384w, /assets/optimized/shawarma-rolls-768-5142929b19f8.webp 768w, /assets/optimized/shawarma-rolls-1254-b6627c76ad80.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/menu/trioMezzes.png": {
+    "src": "/assets/optimized/triomezzes-1254-2969b4c0b97b.webp",
+    "srcSet": "/assets/optimized/triomezzes-384-58a37f253df8.webp 384w, /assets/optimized/triomezzes-768-615619e72a2e.webp 768w, /assets/optimized/triomezzes-1254-2969b4c0b97b.webp 1254w",
+    "width": 1254,
+    "height": 1254
+  },
+  "/assets/plat_shawarma.png": {
+    "src": "/assets/optimized/plat-shawarma-1280-f7ec918778cd.webp",
+    "srcSet": "/assets/optimized/plat-shawarma-384-692af97257c6.webp 384w, /assets/optimized/plat-shawarma-768-f3486da9a687.webp 768w, /assets/optimized/plat-shawarma-1280-f7ec918778cd.webp 1280w",
+    "width": 1448,
+    "height": 1086
+  },
+  "/assets/shawarma rolls.png": {
+    "src": "/assets/optimized/shawarma-rolls-1280-86780b7580d9.webp",
+    "srcSet": "/assets/optimized/shawarma-rolls-384-d427eea17215.webp 384w, /assets/optimized/shawarma-rolls-768-9874a7db76d0.webp 768w, /assets/optimized/shawarma-rolls-1280-86780b7580d9.webp 1280w",
+    "width": 1536,
+    "height": 1024
+  },
+  "/assets/shawarma_normal.png": {
+    "src": "/assets/optimized/shawarma-normal-1280-9b21444b240c.webp",
+    "srcSet": "/assets/optimized/shawarma-normal-384-843b9794bb30.webp 384w, /assets/optimized/shawarma-normal-768-1a307e5bc154.webp 768w, /assets/optimized/shawarma-normal-1280-9b21444b240c.webp 1280w",
+    "width": 1536,
+    "height": 1024
+  }
+}

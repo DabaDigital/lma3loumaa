@@ -719,16 +719,17 @@ export const foodKinds: FoodImage[] = [
  * Kinds absent here have no photo yet and fall back to the brand mark; see
  * foodKinds above. Supply the file, add the entry, and the dish picks it up.
  */
-export const foodImages: Partial<Record<FoodImage, [string, number, number]>> = {
-  classic: ["/assets/shawarma_normal.png", 1536, 1024],
-  cheddar: ["cheddar.jpeg", 500, 500],
-  jalapeno: ["jalapenos.jpeg", 500, 500],
-  cheddarJalapeno: ["cheddar_jalapenos.jpeg", 500, 500],
-  mexican: ["mexicaine.jpeg", 500, 500],
-  plate: ["/assets/plat_shawarma.png", 1448, 1086],
-  rolls: ["/assets/shawarma rolls.png", 1536, 1024],
-  family: ["/assets/family-box-web.png", 1254, 1254],
-};
+export const foodImages: Partial<Record<FoodImage, [string, number, number]>> =
+  {
+    classic: ["/assets/shawarma_normal.png", 1536, 1024],
+    cheddar: ["cheddar.png", 500, 500],
+    jalapeno: ["jalapenos.png", 500, 500],
+    cheddarJalapeno: ["cheddar_jalapenos.png", 500, 500],
+    mexican: ["mexicaine.png", 500, 500],
+    plate: ["/assets/plat_shawarma.png", 1448, 1086],
+    rolls: ["/assets/shawarma rolls.png", 1536, 1024],
+    family: ["/assets/family-box-web.png", 1254, 1254],
+  };
 export function FoodVisual({
   kind,
   className = "",
@@ -791,6 +792,12 @@ export function FoodVisual({
           width={w}
           height={h}
           loading={className.includes("hero") ? "eager" : "lazy"}
+          fetchPriority={className.includes("hero") ? "high" : "auto"}
+          sizes={
+            className.includes("hero")
+              ? "(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 600px"
+              : "(max-width: 600px) 100vw, 600px"
+          }
           onLoad={(event) => void syncFoodBackground(event.currentTarget)}
           onError={(event) => resetFoodBackground(event.currentTarget)}
           draggable={false}

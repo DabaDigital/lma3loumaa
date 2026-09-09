@@ -57,7 +57,7 @@ function Brand({ footer = false }: { footer?: boolean }) {
       aria-label="Shawarma Lma3louma"
     >
       <span className="brand-mark">
-        <LoadingImage src="/assets/lma3louma-logo.png" alt="" />
+        <LoadingImage src="/assets/lma3louma-logo.png" sizes="160px" alt="" />
       </span>
     </a>
   );
@@ -101,6 +101,19 @@ export default function App() {
     document.documentElement.dataset.motion = motion ? "on" : "off";
   }, [motion]);
   useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        (entry.target as HTMLElement).dataset.animationPaused = String(
+          !entry.isIntersecting,
+        );
+      }
+    });
+    document
+      .querySelectorAll(".hero, .ticker")
+      .forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) =>
         entries.forEach((e) => {
@@ -115,12 +128,13 @@ export default function App() {
     return () => observer.disconnect();
   }, [content.loading, items.length, locations.length]);
   const filtered = useMemo(() => {
+    const search = normalize(query);
     const result = items.filter(
       (i) =>
         (category === "all" || i.category === category) &&
         normalize(
           `${Object.values(i.name).join(" ")} ${Object.values(i.description).join(" ")}`,
-        ).includes(normalize(query)),
+        ).includes(search),
     );
     const price = (i: Item) =>
       combo && i.menuPrice != null ? i.menuPrice : i.price;
@@ -313,7 +327,9 @@ export default function App() {
                   {t("scroll")}
                   <ArrowDown size={14} />
                 </a>
-                <span lang="ar" dir="rtl">شاورما هي لمعلومة</span>
+                <span lang="ar" dir="rtl">
+                  شاورما هي لمعلومة
+                </span>
               </div>
             </section>
             <div className="ticker" aria-hidden="true">
@@ -560,7 +576,9 @@ export default function App() {
                 <div className="story-visuals">
                   <FoodVisual kind="rolls" />
                 </div>
-                <p lang="ar" dir="rtl">{t("storyCaption")}</p>
+                <p lang="ar" dir="rtl">
+                  {t("storyCaption")}
+                </p>
                 <div className="story-bottomline">
                   ✦ &nbsp; LMA3LOUMA &nbsp; ✦
                 </div>

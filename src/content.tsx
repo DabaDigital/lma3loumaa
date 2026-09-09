@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -61,11 +62,16 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       );
       if (version !== request.current) return;
       if (results.some((r) => r.error)) throw new Error("content unavailable");
-      setData({
+      const next = {
         categories: results[0].data as Category[],
         items: results[1].data as MenuItem[],
         locations: results[2].data as Location[],
-      });
+      };
+      // Polls often return identical content. Preserve references so menu
+      // filtering, reveal observers and open previews do not rerender.
+      setData((previous) =>
+        JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
+      );
       setError(false);
     } catch {
       if (version === request.current) setError(true);
@@ -74,6 +80,15 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   useEffect(() => {
+    let active = true;
+    let refreshTimer: number | undefined;
+    let authUser: string | null | undefined;
+    const scheduleRefresh = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        if (active) void refresh();
+      }, 50);
+    };
     void refresh();
     if (!supabase) return;
     const channel = supabase.channel("website-content");
@@ -81,20 +96,32 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       channel.on(
         "postgres_changes",
         { event: "*", schema: "public", table },
-        () => void refresh(),
+        scheduleRefresh,
       );
     channel.subscribe();
-    const onFocus = () => void refresh();
+    const onFocus = scheduleRefresh;
     window.addEventListener("focus", onFocus);
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 30000);
-    const { data: auth } = supabase.auth.onAuthStateChange(() => {
-      setData(empty);
-      setLoading(true);
-      window.setTimeout(() => void refresh(), 0);
+    const { data: auth } = supabase.auth.onAuthStateChange((event, session) => {
+      const user = session?.user.id ?? null;
+      // INITIAL_SESSION is already covered by the mount request. SIGNED_IN
+      // can fire again just because the same user returns to the tab.
+      const sameUser = user === authUser;
+      authUser = user;
+      if (event === "INITIAL_SESSION" || (event === "SIGNED_IN" && sameUser))
+        return;
+      request.current++;
+      if (!sameUser || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+        setData(empty);
+        setLoading(true);
+      }
+      scheduleRefresh();
     });
     return () => {
+      active = false;
+      window.clearTimeout(refreshTimer);
       request.current++;
       void supabase!.removeChannel(channel);
       auth.subscription.unsubscribe();
@@ -102,22 +129,25 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       clearInterval(timer);
     };
   }, [refresh]);
-  return (
-    <Context.Provider value={{ ...data, loading, error, refresh }}>
-      {children}
-    </Context.Provider>
+  const value = useMemo(
+    () => ({ ...data, loading, error, refresh }),
+    [data, loading, error, refresh],
   );
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 export const useContent = () => useContext(Context);
 export function usePublicContent() {
   const content = useContent();
-  const categories = content.categories.filter((c) => c.available);
-  return {
-    ...content,
-    categories,
-    items: content.items.filter(
-      (i) => i.available && categories.some((c) => c.id === i.category),
-    ),
-    locations: content.locations.filter((l) => l.available),
-  };
+  return useMemo(() => {
+    const categories = content.categories.filter((c) => c.available);
+    const availableCategories = new Set(categories.map((c) => c.id));
+    return {
+      ...content,
+      categories,
+      items: content.items.filter(
+        (i) => i.available && availableCategories.has(i.category),
+      ),
+      locations: content.locations.filter((l) => l.available),
+    };
+  }, [content]);
 }
