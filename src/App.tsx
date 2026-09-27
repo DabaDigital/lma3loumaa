@@ -1,22 +1,20 @@
 import { LoadingImage } from "./LoadingImage";
-import { useEffect, useMemo, useState } from "react";
+import { MenuShowcase } from "./MenuShowcase";
+import "./menuShowcase.css";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowDown,
   ArrowRight,
   ArrowUpRight,
   ArrowUp,
-  Search,
   MapPin,
   ShoppingBag,
   Menu,
-  Flame,
   Heart,
   Utensils,
   CalendarDays,
   Check,
-  Plus,
-  Sparkles,
   Navigation,
   RefreshCw,
 } from "lucide-react";
@@ -43,12 +41,6 @@ function localDate() {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
-const normalize = (s: string) =>
-  s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f\u064B-\u065F]/g, "")
-    .replace(/[أإآ]/g, "ا");
 function Brand({ footer = false }: { footer?: boolean }) {
   return (
     <a
@@ -74,8 +66,7 @@ export default function App() {
     [category, setCategory] = useState("all"),
     [query, setQuery] = useState(""),
     [sort, setSort] = useState("recommended"),
-    [combo, setCombo] = useState(false),
-    [expanded, setExpanded] = useState(false);
+    [combo, setCombo] = useState(false);
   const [selected, setSelected] = useState<Item | null>(null),
     [orderOpen, setOrderOpen] = useState(false),
     [visit, setVisit] = useState<string | null>(null);
@@ -127,21 +118,6 @@ export default function App() {
     document.querySelectorAll(".reveal").forEach((e) => observer.observe(e));
     return () => observer.disconnect();
   }, [content.loading, items.length, locations.length]);
-  const filtered = useMemo(() => {
-    const search = normalize(query);
-    const result = items.filter(
-      (i) =>
-        (category === "all" || i.category === category) &&
-        normalize(
-          `${Object.values(i.name).join(" ")} ${Object.values(i.description).join(" ")}`,
-        ).includes(search),
-    );
-    const price = (i: Item) =>
-      combo && i.menuPrice != null ? i.menuPrice : i.price;
-    if (sort === "asc") result.sort((a, b) => price(a) - price(b));
-    if (sort === "desc") result.sort((a, b) => price(b) - price(a));
-    return result;
-  }, [category, query, sort, combo, items]);
   useEffect(() => {
     if (
       category !== "all" &&
@@ -151,8 +127,6 @@ export default function App() {
     if (selected) setSelected(items.find((i) => i.id === selected.id) ?? null);
     if (visit && !locations.some((l) => l.id === visit)) setVisit(null);
   }, [content.categories, items, locations]);
-  const visible =
-    category === "all" && !query && !expanded ? filtered.slice(0, 8) : filtered;
   const setLang = (lng: Locale) => {
     void i18n.changeLanguage(lng);
     setMobileNav(false);
@@ -345,186 +319,26 @@ export default function App() {
                 ))}
               </div>
             </div>
-            <section id="menu" className="menu-section section container">
-              <div className="section-heading reveal">
-                <div>
-                  <p className="eyebrow">{t("menuEyebrow")}</p>
-                  <h2>{t("menuTitle")}</h2>
-                  <p>{t("menuDesc")}</p>
-                </div>
-                <span className="handwritten" lang="ar">
-                  حس بالفرق <span>↙</span>
-                </span>
-              </div>
+            <section id="menu" className="menu-section">
               {content.loading ? (
-                <ContentSkeleton kind="menu" />
+                <div className="container section">
+                  <ContentSkeleton kind="menu" />
+                </div>
               ) : (
-                <>
-                  <div className="menu-tools">
-                    <Input
-                      label={t("searchLabel")}
-                      icon={<Search size={19} />}
-                      type="search"
-                      placeholder={t("search")}
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                    <Select
-                      label={t("sort")}
-                      value={sort}
-                      onChange={setSort}
-                      options={[
-                        { value: "recommended", label: t("recommended") },
-                        { value: "asc", label: t("priceAsc") },
-                        { value: "desc", label: t("priceDesc") },
-                      ]}
-                    />
-                  </div>
-                  <div
-                    className="category-tabs"
-                    role="group"
-                    aria-label={t("menu")}
-                  >
-                    {categories.map((c) => (
-                      <button
-                        key={c.id}
-                        aria-pressed={c.id === category}
-                        className={category === c.id ? "active" : ""}
-                        onClick={() => {
-                          setCategory(c.id);
-                          setExpanded(false);
-                        }}
-                      >
-                        <span aria-hidden="true">{c.icon}</span>
-                        {c.name[locale]}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="menu-meta">
-                    <p role="status">
-                      {t("results", { count: filtered.length })}
-                    </p>
-                    <Toggle
-                      label={t("combo")}
-                      description={t("comboHelp")}
-                      checked={combo}
-                      onChange={setCombo}
-                    />
-                  </div>
-                  <div className="food-grid">
-                    {visible.map((item, index) => (
-                      <article
-                        className="food-card"
-                        key={item.id}
-                        style={{
-                          animationDelay: `${Math.min(index, 7) * 35}ms`,
-                        }}
-                      >
-                        <button
-                          className="card-visual-button"
-                          onClick={() => setSelected(item)}
-                          aria-label={`${t("details")} ${item.name[locale]}`}
-                        >
-                          <div className="food-stage">
-                            {item.tag && (
-                              <span className={`food-tag tag-${item.tag}`}>
-                                {item.tag === "spicy" ? (
-                                  <Flame size={12} />
-                                ) : item.tag === "sharing" ? (
-                                  <Heart size={12} />
-                                ) : (
-                                  <Sparkles size={12} />
-                                )}{" "}
-                                {t(item.tag)}
-                              </span>
-                            )}
-                            <span
-                              className="food-stage-word"
-                              aria-hidden="true"
-                            >
-                              {item.category === "mezze"
-                                ? "MEZZÉ"
-                                : item.category === "family"
-                                  ? "PARTAGE"
-                                  : "LMA3LOUMA"}
-                            </span>
-                            <FoodVisual
-                              kind={item.image}
-                              sizes="(max-width: 650px) 50vw, 260px"
-                            />
-                            <span className="card-expand">
-                              <Plus size={17} />
-                            </span>
-                          </div>
-                        </button>
-                        <div className="food-info">
-                          <h3>{item.name[locale]}</h3>
-                          <p>{item.description[locale]}</p>
-                          <div className="food-bottom">
-                            <div>
-                              <span>
-                                {item.variants
-                                  ? t("from")
-                                  : combo && item.menuPrice != null
-                                    ? t("meal")
-                                    : t("single")}
-                              </span>
-                              <strong>
-                                {combo && item.menuPrice != null
-                                  ? item.menuPrice
-                                  : item.price}{" "}
-                                <small>{t("currency")}</small>
-                              </strong>
-                            </div>
-                            <button
-                              className="round-button"
-                              onClick={() => setSelected(item)}
-                              aria-label={`${t("details")} ${item.name[locale]}`}
-                            >
-                              <ArrowUpRight size={19} />
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                  {!filtered.length && (
-                    <div className="empty-state">
-                      <Search size={36} />
-                      <h3>{t("noResults")}</h3>
-                      <p>{t("noResultsSub")}</p>
-                      <Button
-                        onClick={() => {
-                          setQuery("");
-                          setCategory("all");
-                        }}
-                      >
-                        {t("reset")}
-                      </Button>
-                    </div>
-                  )}
-                  {category === "all" && !query && filtered.length > 8 && (
-                    <div className="menu-more">
-                      <Button
-                        variant="secondary"
-                        onClick={() => {
-                          setExpanded(!expanded);
-                          if (expanded)
-                            document.getElementById("menu")?.scrollIntoView({
-                              behavior: motion ? "smooth" : "instant",
-                            });
-                        }}
-                      >
-                        {t(expanded ? "lessMenu" : "allMenu")}
-                        {expanded ? (
-                          <ArrowUp size={17} />
-                        ) : (
-                          <ArrowDown size={17} />
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </>
+                <MenuShowcase
+                  items={items}
+                  categories={categories}
+                  locale={locale}
+                  category={category}
+                  onCategoryChange={setCategory}
+                  query={query}
+                  onQueryChange={setQuery}
+                  sort={sort}
+                  onSortChange={setSort}
+                  combo={combo}
+                  onComboChange={setCombo}
+                  onSelect={setSelected}
+                />
               )}
             </section>
             {content.loading && (
