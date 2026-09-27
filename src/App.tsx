@@ -258,22 +258,6 @@ export default function App() {
                     <br />
                     <span>{t("hero3")}</span>
                   </h1>
-                  <p className="hero-subtitle">{t("heroSub")}</p>
-                  <p className="hero-description">{t("heroDesc")}</p>
-                  <div className="hero-buttons">
-                    <a href="/#menu" className="button button--primary">
-                      {t("discover")}
-                      <ArrowDown size={18} />
-                    </a>
-                    <a href="/#locations" className="hero-location">
-                      <MapPin size={18} />
-                      {t("findUs")}
-                    </a>
-                  </div>
-                  <p className="hero-note">
-                    <ShoppingBag size={14} />
-                    {t("heroNote")}
-                  </p>
                 </div>
                 <div className="hero-art">
                   <span className="hero-ring ring-one" />
@@ -309,6 +293,26 @@ export default function App() {
                     </svg>
                   </div>
                   <span className="art-caption">LMA3LOUMA ORIGINAL · CASA</span>
+                </div>
+                <div className="hero-text">
+                  <p className="hero-subtitle">{t("heroSub")}</p>
+                  <p className="hero-description">{t("heroDesc")}</p>
+                </div>
+                <div className="hero-actions">
+                  <div className="hero-buttons">
+                    <a href="/#menu" className="button button--primary">
+                      {t("discover")}
+                      <ArrowDown size={18} />
+                    </a>
+                    <a href="/#locations" className="hero-location">
+                      <MapPin size={18} />
+                      {t("findUs")}
+                    </a>
+                  </div>
+                  <p className="hero-note">
+                    <ShoppingBag size={14} />
+                    {t("heroNote")}
+                  </p>
                 </div>
               </div>
               <div className="hero-bottom container">

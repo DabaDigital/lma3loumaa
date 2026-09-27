@@ -362,12 +362,31 @@ select:focus-visible {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1.13fr;
+  /* The text blocks stay vertically centred beside the art; the 1fr rows soak up the rest. */
+  grid-template-rows: 1fr auto auto auto 1fr;
+  grid-template-areas:
+    ". art"
+    "copy art"
+    "text art"
+    "actions art"
+    ". art";
   align-items: center;
   min-height: 590px;
   padding-block: 48px 35px;
 }
 .hero-copy {
+  grid-area: copy;
   z-index: 2;
+}
+.hero-text {
+  grid-area: text;
+  z-index: 2;
+  min-width: 0;
+}
+.hero-actions {
+  grid-area: actions;
+  z-index: 2;
+  min-width: 0;
 }
 .hero-copy .eyebrow {
   color: var(--gold);
@@ -445,6 +464,7 @@ select:focus-visible {
   margin-top: 20px;
 }
 .hero-art {
+  grid-area: art;
   position: relative;
   height: 470px;
   min-width: 0;
@@ -2327,10 +2347,20 @@ footer {
   }
   .hero-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas:
+      "copy"
+      "art"
+      "text"
+      "actions";
     min-height: 0;
     padding-block: 32px 0;
   }
-  .hero-copy {
+  .hero-actions {
+    padding-bottom: 24px;
+  }
+  .hero-copy,
+  .hero-text {
     max-width: 470px;
   }
   .hero-copy .eyebrow {
@@ -3011,10 +3041,17 @@ footer {
 .hero h1 > span {
   white-space: nowrap;
 }
-.hero-copy .hero-description {
+/* Title and subtitle sit in separate grid cells, so their margins no longer collapse:
+   drop the title's so the subtitle's margin alone sets the gap beside the art. */
+@media (min-width: 651px) {
+  .hero .hero-copy h1 {
+    margin-bottom: 0;
+  }
+}
+.hero-text .hero-description {
   font-size: 14px;
 }
-.hero-copy .hero-subtitle {
+.hero-text .hero-subtitle {
   font-size: 17px;
 }
 .hero-note {
@@ -3092,10 +3129,10 @@ footer {
   opacity: 0.96;
 }
 @media (max-width: 850px) {
-  .hero-copy .hero-description {
+  .hero-text .hero-description {
     font-size: 12px;
   }
-  .hero-copy .hero-subtitle {
+  .hero-text .hero-subtitle {
     font-size: 14px;
   }
   .hero-note {
@@ -3121,7 +3158,7 @@ footer {
   }
 }
 @media (max-width: 650px) {
-  .hero-copy .hero-description {
+  .hero-text .hero-description {
     font-size: 12px;
   }
   .hero h1 {
@@ -3131,7 +3168,7 @@ footer {
   html[lang="en"] .hero h1 {
     font-size: clamp(40px, 13vw, 76px);
   }
-  .hero-copy .hero-subtitle {
+  .hero-text .hero-subtitle {
     font-size: 15px;
   }
   .hero-note {
