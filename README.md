@@ -139,7 +139,7 @@ Glovo handles address coverage, branch routing, live prices, availability, check
 
 The site uses the restaurant's supplied photographs, displayed with CSS viewport crops, and the original transparent logo at `public/assets/lma3louma-logo.png`, shown intact in the header, footer and browser icon. Source files are unchanged. Replace the menu screenshots with original high-resolution photography when available — screenshot sources limit food image fidelity. None of the current imagery is AI-generated.
 
-Fonts: Barlow Condensed, DM Sans and Noto Sans Arabic, downloaded from Google Fonts and served locally. Source stylesheet: `public/assets/fonts-source.css`; license files under `public/assets/fonts`.
+Fonts: Titan One (French and English), Barlow Condensed, DM Sans and Noto Sans Arabic, downloaded from Google Fonts and served locally. Source stylesheet: `public/assets/fonts-source.css`; license files under `public/assets/fonts`.
 
 Regenerating delivery assets after replacing a photo or font requires Python:
 

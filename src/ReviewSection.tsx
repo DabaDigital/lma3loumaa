@@ -12,7 +12,7 @@ const ReviewForm = lazy(() => import("./ReviewForm"));
 
 export function Reviews() {
   const { i18n } = useTranslation();
-  const locale = (i18n.resolvedLanguage || "fr") as Locale;
+  const locale = (i18n.resolvedLanguage || "ar") as Locale;
   const t = (key: keyof typeof reviewCopy) => reviewCopy[key][locale];
   const { reviews, loading, error, refresh } = useReviewList();
   const [open, setOpen] = useState(false);
@@ -60,7 +60,11 @@ export function Reviews() {
             <div className="reviews-grid">
               {reviews.slice(0, visible).map((review) => (
                 <article className="review-card" key={review.id}>
-                  <ReviewPhoto path={review.image_path} alt={review.title} />
+                  <ReviewPhoto
+                    path={review.image_path}
+                    alt={review.title}
+                    width={800}
+                  />
                   <div className="review-card-copy">
                     <div className="review-card-meta">
                       <span

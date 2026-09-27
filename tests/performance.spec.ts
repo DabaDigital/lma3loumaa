@@ -33,6 +33,22 @@ test("mobile gets a small, prioritized hero and responsive bundled photos", asyn
   );
 });
 
+test("desktop menu cards download the smallest photo variant", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const photos = page.locator("#menu .food-stage img");
+  await photos.first().scrollIntoViewIfNeeded();
+  await expect(photos.first()).not.toHaveClass(/skeleton-image/);
+  const sources = await photos.evaluateAll((images) =>
+    images
+      .map((image) => (image as HTMLImageElement).currentSrc)
+      .filter((source) => source.includes("/optimized/")),
+  );
+  expect(sources.length).toBeGreaterThan(0);
+  for (const source of sources) expect(source).toMatch(/-384-[0-9a-f]+\.webp$/);
+});
+
 test("every generated responsive variant exists and decodes", async ({
   page,
 }) => {

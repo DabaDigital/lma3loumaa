@@ -1,4 +1,12 @@
 @font-face {
+  font-family: 'Titan One';
+  font-style: normal;
+  /* Single heavy cut; claim every weight so browsers never fake a bolder one. */
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(/assets/fonts/titan-one-regular.woff2) format('woff2');
+}
+@font-face {
   font-family: 'Naveid Arabic DEMO';
   font-style: normal;
   font-weight: 800;

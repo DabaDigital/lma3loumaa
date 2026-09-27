@@ -364,9 +364,9 @@ const ar = {
   prevMonth: "الشهر السابق",
   nextMonth: "الشهر القادم",
 };
-let saved = "fr";
+let saved = "ar";
 try {
-  saved = localStorage.getItem("lma-language") || "fr";
+  saved = localStorage.getItem("lma-language") || "ar";
 } catch {
   /* Storage is optional. */
 }
@@ -378,8 +378,8 @@ i18n
       en: { translation: en },
       ar: { translation: ar },
     },
-    lng: ["fr", "en", "ar"].includes(saved) ? saved : "fr",
-    fallbackLng: "fr",
+    lng: ["fr", "en", "ar"].includes(saved) ? saved : "ar",
+    fallbackLng: "ar",
     interpolation: { escapeValue: false },
   });
 export default i18n;

@@ -5,49 +5,89 @@ import imageAssets from "./imageAssets.json";
 type Props = ImgHTMLAttributes<HTMLImageElement>;
 
 function ImageState({ className = "", onLoad, onError, ...props }: Props) {
-  const [settled, setSettled] = useState(false);
+  // Cached images show at once; downloaded ones stay behind the skeleton until
+  // complete, then fade in rather than appearing half-drawn.
+  const [state, setState] = useState<"loading" | "revealed" | "ready">(
+    "loading",
+  );
   const imageRef = useCallback((image: HTMLImageElement | null) => {
-    if (image?.complete) setSettled(true);
+    if (image?.complete) setState("ready");
   }, []);
+  const stateClass =
+    state === "loading"
+      ? "skeleton-image"
+      : state === "revealed"
+        ? "image-reveal"
+        : "";
   return (
     <img
       decoding="async"
       {...props}
       ref={imageRef}
-      className={`${className} ${settled ? "" : "skeleton-image"}`.trim()}
+      className={`${className} ${stateClass}`.trim()}
       onLoad={(event) => {
-        setSettled(true);
+        setState((current) => (current === "loading" ? "revealed" : current));
         onLoad?.(event);
       }}
       onError={(event) => {
-        setSettled(true);
+        setState("ready");
         onError?.(event);
       }}
     />
   );
 }
 
-export function LoadingImage(props: Props) {
-  // Only replace bundled, unversioned images. Uploaded/remote images and an
-  // explicit srcSet continue to use the caller's exact source.
-  let source = props.src || "";
+type Asset = {
+  src: string;
+  srcSet: string;
+  width?: number;
+  height?: number;
+  resized?: boolean;
+};
+const bundled = imageAssets as Record<string, Asset>;
+let storageOrigin = "";
+try {
+  storageOrigin = new URL(import.meta.env.VITE_SUPABASE_URL).origin;
+} catch {
+  // No backend configured: only bundled images are optimized.
+}
+const storagePath = "/storage/v1/object/public/";
+
+// Bundled, unversioned images use their generated WebP variants. Photos
+// uploaded through the admin (1-3 MB originals) are resized by Supabase, which
+// also serves WebP to browsers that accept it. Other remote images and an
+// explicit srcSet keep the caller's exact source.
+function optimized(source: string): Asset | undefined {
   try {
     const url = new URL(source, window.location.origin);
-    source =
-      url.origin === window.location.origin && !url.search && !url.hash
-        ? decodeURIComponent(url.pathname)
-        : "";
+    if (url.search || url.hash) return undefined;
+    if (url.origin === window.location.origin)
+      return bundled[decodeURIComponent(url.pathname)];
+    if (url.origin !== storageOrigin || !url.pathname.startsWith(storagePath))
+      return undefined;
+    const render = (width: number) =>
+      `${url.origin}/storage/v1/render/image/public/${url.pathname.slice(storagePath.length)}` +
+      `?width=${width}&resize=contain&quality=75`;
+    return {
+      src: render(768),
+      srcSet: [384, 768, 1280]
+        .map((width) => `${render(width)} ${width}w`)
+        .join(", "),
+      resized: true,
+    };
   } catch {
-    source = "";
+    return undefined;
   }
-  const asset = !props.srcSet
-    ? (
-        imageAssets as Record<
-          string,
-          { src: string; srcSet: string; width: number; height: number }
-        >
-      )[source]
-    : undefined;
+}
+
+export function LoadingImage(props: Props) {
+  // If resizing is unavailable (e.g. the Supabase plan changes), fall back to
+  // the original upload rather than showing a broken image.
+  const [unresized, setUnresized] = useState<string>();
+  const asset =
+    props.srcSet || unresized === props.src
+      ? undefined
+      : optimized(props.src || "");
   const resolved = asset
     ? {
         ...props,
@@ -62,6 +102,10 @@ export function LoadingImage(props: Props) {
     <ImageState
       key={`${resolved.src ?? ""}|${resolved.srcSet ?? ""}`}
       {...resolved}
+      onError={(event) => {
+        if (asset?.resized) setUnresized(props.src);
+        else props.onError?.(event);
+      }}
     />
   );
 }

@@ -85,6 +85,35 @@ test("all languages persist and Arabic uses RTL", async ({ page }) => {
   await page.screenshot({ path: "test-results/arabic-tablet.png" });
 });
 
+test.describe("first visit", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test("opens in Arabic; French and English use Titan One", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText(
+      "لمعلومة",
+    );
+    await page.getByRole("button", { name: "اللغة", exact: true }).click();
+    await page.getByRole("menuitemradio", { name: "Français" }).click();
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    for (const text of [
+      page.getByRole("heading", { level: 1 }),
+      page.getByRole("searchbox"),
+    ])
+      await expect(text).toHaveCSS("font-family", /^"?Titan One"?,/);
+    const loaded = await page.evaluate(async () => {
+      await document.fonts.ready;
+      return [...document.fonts].some(
+        (face) =>
+          face.family.replace(/"/g, "") === "Titan One" &&
+          face.status === "loaded",
+      );
+    });
+    expect(loaded, "Titan One font file loaded").toBe(true);
+  });
+});
+
 test("custom select and date picker replace native browser chrome", async ({
   page,
 }) => {

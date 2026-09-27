@@ -69,7 +69,7 @@ export default function App() {
   const categories = [initialCategories[0], ...content.categories];
   const familyItem = items.find((i) => i.id === "family");
   const { t, i18n } = useTranslation();
-  const locale = (i18n.resolvedLanguage || "fr") as Locale;
+  const locale = (i18n.resolvedLanguage || "ar") as Locale;
   const [mobileNav, setMobileNav] = useState(false),
     [category, setCategory] = useState("all"),
     [query, setQuery] = useState(""),
@@ -287,7 +287,6 @@ export default function App() {
                 <div className="hero-art">
                   <span className="hero-ring ring-one" />
                   <span className="hero-ring ring-two" />
-                  <span className="hero-orbit">✳</span>
                   <span className="hero-arabic" lang="ar" dir="rtl">
                     مكتنساااش
                   </span>
@@ -449,7 +448,10 @@ export default function App() {
                                   ? "PARTAGE"
                                   : "LMA3LOUMA"}
                             </span>
-                            <FoodVisual kind={item.image} />
+                            <FoodVisual
+                              kind={item.image}
+                              sizes="(max-width: 650px) 50vw, 260px"
+                            />
                             <span className="card-expand">
                               <Plus size={17} />
                             </span>
@@ -567,7 +569,6 @@ export default function App() {
               <div className="story-art reveal">
                 <div className="story-topline">
                   <span>CASABLANCA</span>
-                  <span>✳</span>
                   <span>LMA3LOUMA</span>
                 </div>
                 <span className="story-arabic" dir="rtl" lang="ar">

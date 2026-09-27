@@ -1,5 +1,4 @@
 .skeleton,
-.skeleton-image,
 .review-photo-loading {
   background-color: #dfe7df;
   background-image: linear-gradient(
@@ -10,6 +9,25 @@
   );
   background-size: 250% 100%;
   animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+/* Review photos wait on the same teal as the menu and location photo frames. */
+.review-photo-loading {
+  background-color: var(--teal);
+  background-image: linear-gradient(
+    100deg,
+    transparent 25%,
+    #ffffff12 45%,
+    transparent 65%
+  );
+}
+/* A photo paints top-down while it downloads. An image clips its pixels to its
+   own box, so moving them far outside keeps it invisible until complete; the
+   frame behind it (teal stage, hero disc) shows instead of a grey box. */
+.skeleton-image {
+  object-position: -100000px -100000px;
+}
+.image-reveal {
+  animation: image-reveal 0.35s ease-out;
 }
 .skeleton {
   display: block;
@@ -176,6 +194,11 @@
     background-position: -100% 0;
   }
 }
+@keyframes image-reveal {
+  from {
+    opacity: 0;
+  }
+}
 @media (max-width: 1250px) {
   .skeleton-admin-reviews .skeleton-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -236,13 +259,18 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton,
-  .skeleton-image,
   .review-photo-loading {
     animation: none;
     background-image: none;
   }
+  .image-reveal {
+    animation: none;
+  }
 }
-[data-motion="off"] :is(.skeleton, .skeleton-image, .review-photo-loading) {
+[data-motion="off"] :is(.skeleton, .review-photo-loading) {
   animation: none;
   background-image: none;
+}
+[data-motion="off"] .image-reveal {
+  animation: none;
 }

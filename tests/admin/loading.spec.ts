@@ -147,6 +147,9 @@ test("image skeletons stop on success and error", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const image = page.locator(".hero-food img");
   await expect(image).toHaveClass(/skeleton-image/);
+  // A partly downloaded photo stays hidden, with no grey box in its place.
+  await expect(image).toHaveCSS("object-position", "-100000px -100000px");
+  await expect(image).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   photo.release();
   await expect(image).not.toHaveClass(/skeleton-image/);
   const logo = page.locator(".brand img").first();

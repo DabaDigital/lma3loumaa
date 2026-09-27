@@ -379,18 +379,11 @@
   font-size: 8px;
   color: #b6cebf;
 }
-.promo-spark {
-  display: block;
-  color: var(--gold);
-  font-size: 83px;
-  line-height: 1.15;
-  margin: 13px 0 4px;
-}
 .admin-promo h2 {
   font-family: var(--display);
   font-size: 35px;
   font-weight: 500;
-  margin-bottom: 11px;
+  margin: 20px 0 11px;
 }
 .admin-promo > p {
   color: #c2d2c8;
@@ -666,15 +659,6 @@
   font-size: 8px;
   letter-spacing: 1.5px;
   color: #b5cbc5;
-}
-.login-flower {
-  position: absolute;
-  bottom: 90px;
-  inset-inline-end: -65px;
-  font-size: 300px;
-  line-height: 1;
-  color: #ffffff08;
-  pointer-events: none;
 }
 .login-main {
   padding: 32px 48px;
@@ -1266,16 +1250,6 @@
   .admin-promo > p {
     max-width: 85%;
   }
-  .promo-spark {
-    position: absolute;
-    inset-inline-end: 25px;
-    top: 22px;
-    font-size: 90px;
-    opacity: 0.4;
-  }
-  .admin-promo h2 {
-    margin-top: 52px;
-  }
   .admin-promo .button {
     margin-bottom: 25px;
   }
@@ -1363,9 +1337,6 @@
   }
   .login-story > div,
   .login-story > small,
-  .login-flower {
-    display: none;
-  }
   .login-story:after {
     content: "✦";
     font-size: 34px;

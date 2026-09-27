@@ -11,7 +11,8 @@
 }
 
 :root {
-  font-family: "DM Sans", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
+  font-family:
+    "Titan One", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
   color: #173f43;
   background: #fcfaf5;
   font-synthesis: none;
@@ -23,8 +24,7 @@
   --cream: #fcfaf5;
   --muted: #6a7773;
   --line: #dedfd5;
-  --display:
-    "Barlow Condensed", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
+  --display: "Titan One", "Naveid Arabic DEMO", "Noto Sans Arabic", sans-serif;
   scroll-behavior: smooth;
   scroll-padding-top: 110px;
 }
@@ -483,15 +483,6 @@ select:focus-visible {
   left: calc(50% - 280px);
   border-color: #c1d1b610;
 }
-.hero-orbit {
-  position: absolute;
-  right: 4%;
-  top: 25px;
-  color: var(--gold);
-  font-size: 66px;
-  line-height: 1;
-  animation: spin 60s linear infinite;
-}
 .hero-arabic {
   position: absolute;
   left: 8%;
@@ -543,7 +534,6 @@ select:focus-visible {
   height: 100%;
 }
 .hero[data-animation-paused="true"] .hero-food,
-.hero[data-animation-paused="true"] .hero-orbit,
 .ticker[data-animation-paused="true"] > div {
   animation-play-state: paused;
 }
@@ -1280,9 +1270,6 @@ select:focus-visible {
   font-weight: 700;
   color: #697965;
 }
-.story-topline > span:nth-child(2) {
-  font-size: 26px;
-}
 .story-arabic {
   display: block;
   text-align: center;
@@ -1972,11 +1959,6 @@ footer {
     transform: translateY(-8px);
   }
 }
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
 @keyframes marquee {
   to {
     transform: translateX(-50%);
@@ -2035,7 +2017,7 @@ footer {
   padding: 13px 16px 13px 38px;
 }
 [dir="rtl"] .food-stage-word {
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Titan One", sans-serif;
 }
 [dir="rtl"] h2 {
   letter-spacing: 0;
@@ -2227,11 +2209,6 @@ footer {
   .hero-sticker {
     bottom: 16px;
     right: -10px;
-  }
-  .hero-orbit {
-    font-size: 43px;
-    top: 33px;
-    right: -4px;
   }
   .price-note strong {
     font-size: 47px;
@@ -2520,11 +2497,6 @@ footer {
     font-size: 22px;
     top: 12px;
     left: 1%;
-  }
-  .hero-orbit {
-    top: 9px;
-    right: 6%;
-    font-size: 48px;
   }
   .hero-sticker {
     width: 82px;
@@ -3162,6 +3134,11 @@ footer {
 }
 .hero-copy {
   min-width: 0;
+  container-type: inline-size;
+}
+/* Titan One is wide: fit "LMA3LOUMA." (~6.6em) to the copy column. */
+:root[dir="ltr"] .hero h1 {
+  font-size: min(14.5cqi, 105px);
 }
 .hero h1 > span {
   white-space: nowrap;
