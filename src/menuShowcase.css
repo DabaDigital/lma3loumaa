@@ -855,6 +855,7 @@
     min-width: 180px;
   }
   .menu-showcase-catalog-trigger {
+    order: -1;
     margin-inline-start: auto;
     min-height: 36px;
     padding: 8px 2px;
