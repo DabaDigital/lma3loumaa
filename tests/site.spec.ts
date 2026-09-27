@@ -8,6 +8,7 @@ test("menu search, categories, prices and product options work", async ({
     "LMA3LOUMA",
   );
   await page.locator(".menu-showcase-catalog-trigger").click();
+  await expect(page).toHaveURL(/\/menu$/);
   await page.getByRole("searchbox").fill("citronnade");
   await expect(page.locator(".food-card")).toHaveCount(1);
   await expect(page.locator(".food-card")).toContainText("13");
@@ -119,18 +120,29 @@ test("flavor showcase navigates dishes, meal prices and categories", async ({
   await expect(feature.getByRole("heading")).toHaveText("Lma3louma Super");
   await expect(carousel.locator(".flavor-arrow")).toHaveCount(0);
 
-  // Opening the full menu resets category filtering and focuses search.
+  // With two dishes, previous and next are the same one: it shows once.
+  await more.locator("summary").click();
+  await more.getByRole("button", { name: "À côté", exact: true }).click();
+  await expect(carousel.locator(".flavor-arrow")).toHaveCount(2);
+  await expect(carousel.locator(".flavor-neighbor")).toHaveCount(1);
+
+  // The full menu opens as its own page, on every category.
   const catalogTrigger = page.locator(".menu-showcase-catalog-trigger");
   await catalogTrigger.click();
-  await expect(page.getByRole("searchbox")).toBeFocused();
+  await expect(page).toHaveURL(/\/menu$/);
+  await expect(page.locator(".menu-showcase")).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Le menu" }),
+  ).toBeFocused();
   await page.getByRole("searchbox").fill("citronnade");
   await expect(page.locator(".food-card")).toHaveCount(1);
   await page
     .locator(".menu-catalog-heading")
-    .getByRole("button", { name: "Revenir aux saveurs" })
+    .getByRole("link", { name: "Revenir aux saveurs" })
     .click();
+  await expect(page).toHaveURL(/\/#menu$/);
   await expect(page.getByRole("searchbox")).toHaveCount(0);
-  await expect(catalogTrigger).toBeFocused();
+  await expect(catalogTrigger).toBeInViewport();
   await catalogTrigger.click();
   await expect(page.getByRole("searchbox")).toHaveValue("");
   await expect(
@@ -138,6 +150,118 @@ test("flavor showcase navigates dishes, meal prices and categories", async ({
       .locator(".food-card")
       .getByRole("heading", { name: "Lma3louma", exact: true }),
   ).toBeVisible();
+});
+
+test("the full menu is a page of its own", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.locator(".desktop-nav");
+  const menuLink = nav.getByRole("link", { name: "Le menu" });
+
+  // Leaving the home page halfway down and coming back returns to that spot,
+  // once fonts and photos have settled its layout.
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => document.fonts.ready);
+  const leftAt = () =>
+    page.evaluate(() => (window as unknown as { leftAt?: number }).leftAt);
+  await page.evaluate(() => {
+    const flags = window as unknown as { leftAt?: number };
+    scrollTo({ top: 1500, behavior: "instant" });
+    // Playwright may scroll before clicking, so note where the click happened.
+    document.addEventListener("click", () => (flags.leftAt = scrollY), {
+      capture: true,
+      once: true,
+    });
+  });
+  await menuLink.click();
+  const homeScroll = (await leftAt())!;
+  expect(homeScroll).toBeGreaterThan(0);
+  await expect(page).toHaveURL(/\/menu$/);
+  await expect(page).toHaveTitle(/^Le menu — Shawarma Lma3louma$/);
+  await expect(menuLink).toHaveAttribute("aria-current", "page");
+  await expect(page.locator(".hero")).toHaveCount(0);
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+
+  // The chosen tab is kept in the address, so it can be linked to.
+  const tabs = page.locator(".category-tabs");
+  const mezze = tabs.getByRole("button", { name: "Mezzés", exact: true });
+  await mezze.click();
+  await expect(page).toHaveURL(/\/menu\?category=mezze$/);
+  const mezzeCount = await page.locator(".food-card").count();
+  expect(mezzeCount).toBeGreaterThan(0);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator(".hero")).toBeVisible();
+  await expect
+    .poll(() => page.evaluate(() => scrollY))
+    .toBeCloseTo(homeScroll, -1);
+  // Sections below still fade in after the page is swapped back.
+  await page.locator(".location-card").first().scrollIntoViewIfNeeded();
+  await expect(page.locator(".location-card").first()).toHaveClass(
+    /is-visible/,
+  );
+  await page.goForward();
+  await expect(mezze).toHaveAttribute("aria-pressed", "true");
+  // Still the same document: the flag set before the first click survived.
+  expect(await leftAt()).toBe(homeScroll);
+  await page.reload();
+  await expect(mezze).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".food-card")).toHaveCount(mezzeCount);
+
+  // Footer menu links open the page on their category.
+  await page.goto("/");
+  await page
+    .locator("footer .footer-links")
+    .first()
+    .getByRole("link", { name: "Shawarmas", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/menu\?category=shawarma$/);
+  await expect(
+    tabs.getByRole("button", { name: "Shawarmas", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+
+  // From the menu page, other header links lead back into the home page.
+  await nav.getByRole("link", { name: "Nos adresses" }).click();
+  await expect(page).toHaveURL(/\/#locations$/);
+  await expect(page.locator("#locations")).toBeInViewport();
+});
+
+test("showcase headline never collides with the side dishes", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const check = async (language: string) => {
+    // End at 1440px, where the header's language menu is visible.
+    for (const width of [1000, 1180, 1900, 1440]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.evaluate(() => document.fonts.ready);
+      const collisions = await page.evaluate(() => {
+        const boxes = (selector: string) =>
+          [...document.querySelectorAll(selector)].map((element) =>
+            element.getBoundingClientRect(),
+          );
+        const intro = boxes(".menu-showcase-intro h2, .menu-showcase-intro p");
+        return boxes(".flavor-neighbor, .flavor-arrow").filter((box) =>
+          intro.some(
+            (text) =>
+              text.left < box.right &&
+              box.left < text.right &&
+              text.top < box.bottom &&
+              box.top < text.bottom,
+          ),
+        ).length;
+      });
+      expect(collisions, `${language} at ${width}px`).toBe(0);
+    }
+  };
+  await check("French");
+  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "English" }).click();
+  await check("English");
+  await page.getByRole("button", { name: "Language", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "العربية" }).click();
+  await check("Arabic");
 });
 
 test("Arabic showcase keyboard navigation and more categories fit a narrow phone", async ({
@@ -191,7 +315,7 @@ test("all languages persist and Arabic uses RTL", async ({ page }) => {
     "placeholder",
     "Search for a dish, a flavour…",
   );
-  await page.reload();
+  await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.getByRole("button", { name: "Language", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
@@ -280,6 +404,8 @@ test("custom select and date picker replace native browser chrome", async ({
   await expect(sort).toContainText("Prix décroissant");
 
   // The calendar is rendered by the app, in the app's language.
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
   await page
     .getByRole("button", { name: "Préparer ma visite" })
     .first()
@@ -339,6 +465,44 @@ test("mobile navigation, Glovo handoff and calendar reminder", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBeTruthy();
+});
+
+test("family box shows its contents, the brand line and even spacing", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const family = page.locator(".family-section");
+  await expect(family).toContainText(
+    "Des rolls, des frites, des sauces et une grande boisson à partager.",
+  );
+  await expect(family.locator(".family-signature")).toContainText(
+    "لمعلومة مكتنساااش",
+  );
+  // The story section repeated the family copy; it and its nav link are gone.
+  await expect(page.locator("#story")).toHaveCount(0);
+  await expect(page.locator('a[href="/#story"]')).toHaveCount(0);
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() => {
+      document.documentElement.dataset.motion = "off";
+      document
+        .querySelectorAll(".reveal")
+        .forEach((e) => e.classList.add("is-visible"));
+    });
+    const gaps = await family.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      return {
+        above: Math.round(
+          box.top - el.previousElementSibling!.getBoundingClientRect().bottom,
+        ),
+        below: Math.round(
+          el.nextElementSibling!.getBoundingClientRect().top - box.bottom,
+        ),
+      };
+    });
+    expect(gaps.above, `space above at ${width}px`).toBeGreaterThan(0);
+    expect(gaps.below, `space below at ${width}px`).toBe(gaps.above);
+  }
 });
 
 test("desktop and mobile layouts load without broken assets or runtime errors", async ({

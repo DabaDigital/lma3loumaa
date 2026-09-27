@@ -1,5 +1,7 @@
 import { LoadingImage } from "./LoadingImage";
 import { MenuShowcase } from "./MenuShowcase";
+import { MenuPage } from "./MenuPage";
+import { useLocation } from "./router";
 import "./menuShowcase.css";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -62,10 +64,11 @@ export default function App() {
   const familyItem = items.find((i) => i.id === "family");
   const { t, i18n } = useTranslation();
   const locale = (i18n.resolvedLanguage || "ar") as Locale;
+  const { pathname } = useLocation();
+  const showComponents = pathname === "/components",
+    showMenu = pathname === "/menu";
   const [mobileNav, setMobileNav] = useState(false),
     [category, setCategory] = useState("all"),
-    [query, setQuery] = useState(""),
-    [sort, setSort] = useState("recommended"),
     [combo, setCombo] = useState(false);
   const [selected, setSelected] = useState<Item | null>(null),
     [orderOpen, setOrderOpen] = useState(false),
@@ -81,13 +84,17 @@ export default function App() {
     } catch {
       /* Optional storage. */
     }
-    document.title =
-      locale === "ar"
-        ? "شاورما المعلومة — اللذة لي كتجمعنا"
-        : locale === "en"
-          ? "Shawarma Lma3louma — A taste of Casa"
-          : "Shawarma Lma3louma — Le goût de Casa";
-  }, [locale]);
+    const name = locale === "ar" ? "شاورما المعلومة" : "Shawarma Lma3louma";
+    document.title = showMenu
+      ? `${t("menu")} — ${name}`
+      : `${name} — ${
+          locale === "ar"
+            ? "اللذة لي كتجمعنا"
+            : locale === "en"
+              ? "A taste of Casa"
+              : "Le goût de Casa"
+        }`;
+  }, [locale, showMenu]);
   useEffect(() => {
     document.documentElement.dataset.motion = motion ? "on" : "off";
   }, [motion]);
@@ -103,7 +110,7 @@ export default function App() {
       .querySelectorAll(".hero, .ticker")
       .forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, []);
+  }, [pathname]);
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) =>
@@ -117,7 +124,7 @@ export default function App() {
     );
     document.querySelectorAll(".reveal").forEach((e) => observer.observe(e));
     return () => observer.disconnect();
-  }, [content.loading, items.length, locations.length]);
+  }, [content.loading, items.length, locations.length, pathname]);
   useEffect(() => {
     if (
       category !== "all" &&
@@ -133,18 +140,18 @@ export default function App() {
   };
   const navLinks = (
     <>
-      <a href="/#menu" onClick={() => setMobileNav(false)}>
+      <a
+        href="/menu"
+        aria-current={showMenu ? "page" : undefined}
+        onClick={() => setMobileNav(false)}
+      >
         {t("menu")}
-      </a>
-      <a href="/#story" onClick={() => setMobileNav(false)}>
-        {t("story")}
       </a>
       <a href="/#locations" onClick={() => setMobileNav(false)}>
         {t("locations")}
       </a>
     </>
   );
-  const showComponents = window.location.pathname === "/components";
   return (
     <>
       <a className="skip-link" href="#main">
@@ -221,6 +228,16 @@ export default function App() {
             setMotion={setMotion}
             locale={locale}
             setLang={setLang}
+          />
+        ) : showMenu ? (
+          <MenuPage
+            items={items}
+            categories={categories}
+            locale={locale}
+            loading={content.loading}
+            combo={combo}
+            onComboChange={setCombo}
+            onSelect={setSelected}
           />
         ) : (
           <>
@@ -331,10 +348,6 @@ export default function App() {
                   locale={locale}
                   category={category}
                   onCategoryChange={setCategory}
-                  query={query}
-                  onQueryChange={setQuery}
-                  sort={sort}
-                  onSortChange={setSort}
                   combo={combo}
                   onComboChange={setCombo}
                   onSelect={setSelected}
@@ -371,61 +384,18 @@ export default function App() {
                     <br />
                     <span>{t("familyTitle2")}</span>
                   </h2>
-                  <p>{t("familyDesc")}</p>
+                  <p>{familyItem.description[locale]}</p>
                   <Button onClick={() => setSelected(familyItem)}>
                     {t("familyCta")}
                     <ArrowUpRight size={18} />
                   </Button>
+                  <div className="family-signature" lang="ar">
+                    <strong dir="rtl">لمعلومة مكتنساااش</strong>
+                    <span dir="rtl">جربوها أو غادي تحسو بالفرق</span>
+                  </div>
                 </div>
               </section>
             )}
-            <section className="story-section section container" id="story">
-              <div className="story-art reveal">
-                <div className="story-topline">
-                  <span>CASABLANCA</span>
-                  <span>LMA3LOUMA</span>
-                </div>
-                <span className="story-arabic" dir="rtl" lang="ar">
-                  {t("storyArabic")}
-                </span>
-                <div className="story-visuals">
-                  <FoodVisual kind="rolls" />
-                </div>
-                <p lang="ar" dir="rtl">
-                  {t("storyCaption")}
-                </p>
-                <div className="story-bottomline">
-                  ✦ &nbsp; LMA3LOUMA &nbsp; ✦
-                </div>
-              </div>
-              <div className="story-copy reveal">
-                <p className="eyebrow">{t("storyEyebrow")}</p>
-                <h2>
-                  {t("storyTitle")}
-                  <br />
-                  <span>{t("storyTitle2")}</span>
-                </h2>
-                <p>{t("storyDesc")}</p>
-                <div className="story-feature">
-                  <span>
-                    <Utensils size={22} />
-                  </span>
-                  <div>
-                    <h3>{t("storyOne")}</h3>
-                    <p>{t("storyOneDesc")}</p>
-                  </div>
-                </div>
-                <div className="story-feature">
-                  <span>
-                    <Heart size={22} />
-                  </span>
-                  <div>
-                    <h3>{t("storyTwo")}</h3>
-                    <p>{t("storyTwoDesc")}</p>
-                  </div>
-                </div>
-              </div>
-            </section>
             <Reviews />
             <section className="locations-section" id="locations">
               <div className="container section">
@@ -517,7 +487,7 @@ export default function App() {
           <div className="footer-links">
             <strong>{t("menu")}</strong>
             {content.categories.slice(0, 3).map((c) => (
-              <a key={c.id} href="/#menu" onClick={() => setCategory(c.id)}>
+              <a key={c.id} href={`/menu?category=${c.id}`}>
                 {c.name[locale]}
               </a>
             ))}
@@ -553,7 +523,7 @@ export default function App() {
           </span>
           <Toggle label={t("motion")} checked={motion} onChange={setMotion} />
           <a href="/admin">Administration</a>
-          <a href="/#top">
+          <a href="#top">
             {t("backTop")}
             <ArrowUp size={14} />
           </a>
@@ -561,7 +531,7 @@ export default function App() {
       </footer>
       {!showComponents && (
         <div className="mobile-order-bar">
-          <a href="/#menu">
+          <a href="/menu">
             <Utensils size={18} />
             {t("menu")}
           </a>

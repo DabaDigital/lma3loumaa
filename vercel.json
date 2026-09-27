@@ -16,6 +16,7 @@
   ],
   "rewrites": [
     { "source": "/admin/:path*", "destination": "/index.html" },
-    { "source": "/components", "destination": "/index.html" }
+    { "source": "/components", "destination": "/index.html" },
+    { "source": "/menu", "destination": "/index.html" }
   ]
 }

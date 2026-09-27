@@ -541,7 +541,7 @@
 .mezze-bowl {
   display: block;
   position: relative;
-  aspect-ratio: 1.44;
+  aspect-ratio: 1.5;
   overflow: hidden;
   /* Softens the cuts through the rim and the base of the bowl. */
   mask-image: linear-gradient(
@@ -552,12 +552,12 @@
     transparent
   );
 }
-/* Frames x 10-90%, y 20-75.5% of the square shot: the bowl, without the
+/* Frames x 10-90%, y 22-75.5% of the square shot: the bowl, without the
    logo above it or the name label below it. */
 .mezze-bowl img {
   position: absolute;
   left: -12.5%;
-  top: -36%;
+  top: -41.25%;
   width: 125%;
   max-width: none;
   height: auto;
@@ -603,8 +603,7 @@
   color: var(--dark);
 }
 .menu-catalog {
-  padding-block: 48px 0;
-  scroll-margin-top: 110px;
+  padding-block: 56px 96px;
 }
 .menu-catalog-heading {
   display: flex;
@@ -613,8 +612,11 @@
   gap: 20px;
   margin-bottom: 28px;
 }
-.menu-catalog-heading h3 {
-  font-size: 32px;
+.menu-catalog-heading h1 {
+  font-size: 40px;
+}
+.menu-catalog-heading h1:focus {
+  outline: none;
 }
 .menu-catalog .food-crop {
   overflow: hidden;
@@ -1010,15 +1012,14 @@
     font-size: 13px;
   }
   .menu-catalog {
-    padding-top: 30px;
-    scroll-margin-top: 80px;
+    padding-block: 30px 60px;
   }
   .menu-catalog-heading {
     gap: 10px;
     margin-bottom: 18px;
   }
-  .menu-catalog-heading h3 {
-    font-size: 25px;
+  .menu-catalog-heading h1 {
+    font-size: 28px;
   }
   .menu-catalog-heading .text-button {
     font-size: 11px;

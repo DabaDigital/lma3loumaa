@@ -1,18 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Flame,
-  Heart,
-  Plus,
   Search,
-  Sparkles,
-  X,
 } from "lucide-react";
-import { Button, FoodVisual, Input, Select, Toggle } from "./components";
+import { Button, FoodVisual } from "./components";
 import { LoadingImage } from "./LoadingImage";
 import type { Item, Locale, Localized } from "./data";
 
@@ -22,10 +17,6 @@ export type MenuShowcaseProps = {
   locale: Locale;
   category: string;
   onCategoryChange: (id: string) => void;
-  query: string;
-  onQueryChange: (value: string) => void;
-  sort: string;
-  onSortChange: (value: string) => void;
   combo: boolean;
   onComboChange: (value: boolean) => void;
   onSelect: (item: Item) => void;
@@ -33,19 +24,18 @@ export type MenuShowcaseProps = {
 
 const copy = {
   ar: {
-    title: "شنو شهيتي",
+    title: "شنو تشهيتي",
     titleAccent: "اليوم؟",
-    subtitle: "اختار النكهة اللي كتعجبك.",
+    subtitle: "اختار الشاورما اللي كتعجبك.",
     choose: "اختارها",
     more: "المزيد",
-    previous: "النكهة السابقة",
-    next: "النكهة التالية",
-    flavors: "اختار النكهة",
+    previous: "الشاورما السابقة",
+    next: "الشاورما التالية",
+    flavors: "اختار الشاورما",
     carousel: "استكشف النكهات",
-    carouselRole: "عارض النكهات",
+    carouselRole: "عرض النكهات",
     mezze: "كمّلها بالمقبلات",
     mezzeDescription: "مقبلات لذيذة تكمل وجبتك.",
-    closeCatalog: "رجع للنكهات",
   },
   fr: {
     title: "Une envie",
@@ -60,7 +50,6 @@ const copy = {
     carouselRole: "carrousel",
     mezze: "Et un petit mezzé ?",
     mezzeDescription: "La touche gourmande pour compléter votre repas.",
-    closeCatalog: "Revenir aux saveurs",
   },
   en: {
     title: "What are you",
@@ -75,16 +64,8 @@ const copy = {
     carouselRole: "carousel",
     mezze: "Make room for mezze",
     mezzeDescription: "A little something to complete your meal.",
-    closeCatalog: "Back to the flavors",
   },
 };
-
-const normalize = (value: string) =>
-  value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f\u064B-\u065F]/g, "")
-    .replace(/[أإآ]/g, "ا");
 
 /** Hand-drawn burst that radiates away from the heading's first word; the
  * stylesheet mirrors it for left-to-right text. */
@@ -161,10 +142,6 @@ export function MenuShowcase({
   locale,
   category,
   onCategoryChange,
-  query,
-  onQueryChange,
-  sort,
-  onSortChange,
   combo,
   onComboChange,
   onSelect,
@@ -172,18 +149,11 @@ export function MenuShowcase({
   const { t } = useTranslation();
   const text = copy[locale];
   const rtl = locale === "ar";
-  const id = useId();
   const [activeId, setActiveId] = useState("classic");
-  const [catalogOpen, setCatalogOpen] = useState(false);
-  const catalogRef = useRef<HTMLDivElement>(null);
-  const catalogTriggerRef = useRef<HTMLButtonElement>(null);
   const moreRef = useRef<HTMLDetailsElement>(null);
   const selectorRef = useRef<HTMLDivElement>(null);
-  const focusCatalog = useRef(false);
-  const focusShowcase = useRef(false);
   const swipeStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressClickUntil = useRef(0);
-  const showCatalog = catalogOpen || !!query || sort !== "recommended";
   const stageCategory =
     category === "all"
       ? items.some((item) => item.category === "shawarma")
@@ -226,38 +196,6 @@ export function MenuShowcase({
   const mezzeItems = items
     .filter((item) => item.category === "mezze")
     .slice(0, 3);
-  const filtered = useMemo(() => {
-    const search = normalize(query.trim());
-    const result = items.filter(
-      (item) =>
-        (category === "all" || item.category === category) &&
-        normalize(
-          `${Object.values(item.name).join(" ")} ${Object.values(item.description).join(" ")}`,
-        ).includes(search),
-    );
-    const itemPrice = (item: Item) =>
-      combo && item.menuPrice != null ? item.menuPrice : item.price;
-    if (sort === "asc") result.sort((a, b) => itemPrice(a) - itemPrice(b));
-    if (sort === "desc") result.sort((a, b) => itemPrice(b) - itemPrice(a));
-    return result;
-  }, [items, category, query, sort, combo]);
-
-  useEffect(() => {
-    if (!showCatalog && focusShowcase.current) {
-      focusShowcase.current = false;
-      catalogTriggerRef.current?.scrollIntoView({
-        block: "center",
-        behavior: "auto",
-      });
-      catalogTriggerRef.current?.focus({ preventScroll: true });
-    }
-    if (!showCatalog || !focusCatalog.current) return;
-    focusCatalog.current = false;
-    catalogRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
-    catalogRef.current
-      ?.querySelector<HTMLInputElement>('input[type="search"]')
-      ?.focus({ preventScroll: true });
-  }, [showCatalog]);
 
   // On narrow screens the flavor row scrolls; keep the chosen one in view
   // without moving the page.
@@ -286,18 +224,6 @@ export function MenuShowcase({
       stageItems[(activeIndex + offset + stageItems.length) % stageItems.length]
         .id,
     );
-  };
-  const toggleCatalog = () => {
-    if (showCatalog) {
-      focusShowcase.current = true;
-      setCatalogOpen(false);
-      onQueryChange("");
-      onSortChange("recommended");
-    } else {
-      focusCatalog.current = true;
-      onCategoryChange("all");
-      setCatalogOpen(true);
-    }
   };
 
   return (
@@ -354,21 +280,10 @@ export function MenuShowcase({
                 </details>
               )}
             </div>
-            <button
-              type="button"
-              className="menu-showcase-catalog-trigger"
-              ref={catalogTriggerRef}
-              aria-expanded={showCatalog}
-              aria-controls={`${id}-catalog`}
-              onClick={toggleCatalog}
-            >
-              {showCatalog ? (
-                <X size={20} aria-hidden="true" />
-              ) : (
-                <Search size={20} aria-hidden="true" />
-              )}
-              <span>{showCatalog ? text.closeCatalog : t("allMenu")}</span>
-            </button>
+            <a href="/menu" className="menu-showcase-catalog-trigger">
+              <Search size={20} aria-hidden="true" />
+              <span>{t("allMenu")}</span>
+            </a>
           </div>
 
           <div className="menu-showcase-intro">
@@ -625,140 +540,6 @@ export function MenuShowcase({
               </article>
             ))}
           </div>
-        </div>
-      )}
-
-      {showCatalog && (
-        <div
-          className="menu-catalog container"
-          id={`${id}-catalog`}
-          ref={catalogRef}
-        >
-          <div className="menu-catalog-heading">
-            <h3>{t("menu")}</h3>
-            <button
-              type="button"
-              className="text-button"
-              onClick={toggleCatalog}
-            >
-              {text.closeCatalog}
-              <X size={18} aria-hidden="true" />
-            </button>
-          </div>
-          <div className="menu-tools">
-            <Input
-              label={t("searchLabel")}
-              icon={<Search size={19} />}
-              type="search"
-              placeholder={t("search")}
-              value={query}
-              onChange={(event) => onQueryChange(event.target.value)}
-            />
-            <Select
-              label={t("sort")}
-              value={sort}
-              onChange={onSortChange}
-              options={[
-                { value: "recommended", label: t("recommended") },
-                { value: "asc", label: t("priceAsc") },
-                { value: "desc", label: t("priceDesc") },
-              ]}
-            />
-          </div>
-          <div className="category-tabs" role="group" aria-label={t("menu")}>
-            {categories.map((entry) => (
-              <button
-                type="button"
-                key={entry.id}
-                aria-pressed={category === entry.id}
-                className={category === entry.id ? "active" : ""}
-                onClick={() => changeCategory(entry.id)}
-              >
-                <span aria-hidden="true">{entry.icon}</span>
-                {entry.name[locale]}
-              </button>
-            ))}
-          </div>
-          <div className="menu-meta">
-            <p role="status">{t("results", { count: filtered.length })}</p>
-            <Toggle
-              label={t("combo")}
-              description={t("comboHelp")}
-              checked={combo}
-              onChange={onComboChange}
-            />
-          </div>
-          <div className="food-grid">
-            {filtered.map((item) => (
-              <article className="food-card" key={item.id}>
-                <button
-                  type="button"
-                  className="card-visual-button"
-                  onClick={() => onSelect(item)}
-                  aria-label={`${t("details")} ${item.name[locale]}`}
-                >
-                  <div className="food-stage">
-                    {item.tag && (
-                      <span className={`food-tag tag-${item.tag}`}>
-                        {item.tag === "spicy" ? (
-                          <Flame size={12} />
-                        ) : item.tag === "sharing" ? (
-                          <Heart size={12} />
-                        ) : (
-                          <Sparkles size={12} />
-                        )}{" "}
-                        {t(item.tag)}
-                      </span>
-                    )}
-                    <FoodVisual
-                      kind={item.image}
-                      sizes="(max-width: 650px) 50vw, 260px"
-                    />
-                    <span className="card-expand">
-                      <Plus size={17} />
-                    </span>
-                  </div>
-                </button>
-                <div className="food-info">
-                  <h3>{item.name[locale]}</h3>
-                  <p>{item.description[locale]}</p>
-                  <div className="food-bottom">
-                    <div>
-                      <span>{priceLabel(item)}</span>
-                      <strong>
-                        {price(item)} <small>{t("currency")}</small>
-                      </strong>
-                    </div>
-                    <button
-                      type="button"
-                      className="round-button"
-                      onClick={() => onSelect(item)}
-                      aria-label={`${t("details")} ${item.name[locale]}`}
-                    >
-                      <ArrowUpRight size={19} />
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-          {!filtered.length && (
-            <div className="empty-state">
-              <Search size={28} />
-              <h3>{t("noResults")}</h3>
-              <p>{t("noResultsSub")}</p>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  onQueryChange("");
-                  changeCategory("all");
-                  setCatalogOpen(true);
-                }}
-              >
-                {t("allMenu")}
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>

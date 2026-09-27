@@ -47,7 +47,7 @@ test("desktop menu cards download the smallest photo variant", async ({
     if (request.url().includes("/optimized/")) requested.push(request.url());
   });
   await page.locator(".menu-showcase-catalog-trigger").click();
-  const photos = page.locator("#menu .food-stage img");
+  const photos = page.locator(".menu-catalog .food-stage img");
   await photos.first().scrollIntoViewIfNeeded();
   for (const index of [0, 1, 2, 3])
     await expect(photos.nth(index)).not.toHaveClass(/skeleton-image/);
