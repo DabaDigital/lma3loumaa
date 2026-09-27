@@ -353,10 +353,27 @@ test("only approved reviews render as plain text, and moderation changes refresh
       (url) => url.searchParams.get("status") === "eq.approved",
     ),
   ).toBe(true);
+  // Photos stay collapsed, and are not downloaded, until a visitor opens them.
+  expect(state.downloads).not.toContain(
+    `/storage/v1/object/review-images/${photoPath}`,
+  );
+  const photoToggle = section.getByRole("button", {
+    name: "Voir la photo",
+    exact: true,
+  });
+  await expect(photoToggle).toHaveAttribute("aria-expanded", "false");
+  await photoToggle.click();
   await expect
     .poll(() => state.downloads)
     .toContain(`/storage/v1/object/review-images/${photoPath}`);
   await expect(section.locator('img[src^="blob:"]')).toBeVisible();
+  const hideToggle = section.getByRole("button", {
+    name: "Masquer la photo",
+    exact: true,
+  });
+  await expect(hideToggle).toHaveAttribute("aria-expanded", "true");
+  await hideToggle.click();
+  await expect(section.locator('img[src^="blob:"]')).toBeHidden();
 
   state.reviews[0].status = "rejected";
   state.reviews[1].status = "approved";

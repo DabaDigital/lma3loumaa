@@ -47,7 +47,7 @@ export const tables = {
 };
 export default function Admin() {
   const { i18n } = useTranslation();
-  const locale = (i18n.resolvedLanguage || "fr") as Locale;
+  const locale = (i18n.resolvedLanguage || "ar") as Locale;
   const t = (key: keyof typeof copy) => copy[key][locale];
   const [user, setUser] = useState<User | null>(null);
   const [checking, setChecking] = useState(!!supabase);
@@ -225,9 +225,6 @@ export default function Admin() {
             </h1>
             <p>{t("intro")}</p>
           </div>
-          <span className="login-flower" aria-hidden="true">
-            ✳
-          </span>
           <small>CASABLANCA · DEPUIS TOUJOURS, AVEC GOÛT</small>
         </aside>
         <main className="login-main">
@@ -545,7 +542,6 @@ export default function Admin() {
                 </section>
                 <section className="admin-promo">
                   <span className="eyebrow">FAIT AVEC GOÛT</span>
-                  <span className="promo-spark">✳</span>
                   <h2>{t("quick")}</h2>
                   <p>{t("quickSub")}</p>
                   <Button

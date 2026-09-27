@@ -2,7 +2,6 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 const fr = {
   menu: "Le menu",
-  story: "L’esprit Lma3louma",
   locations: "Nos adresses",
   order: "Commander",
   orderGlovo: "Commander sur Glovo",
@@ -54,20 +53,7 @@ const fr = {
   familyEyebrow: "UN MOMENT DE PARTAGE",
   familyTitle: "Le plaisir, ensemble.",
   familyTitle2: "Une Family Box à partager.",
-  familyDesc:
-    "Ce n’est pas seulement un shawarma, c’est un moment de plaisir et de partage",
   familyCta: "Découvrir la Family Box",
-  storyEyebrow: "CE N’EST PAS SEULEMENT UN SHAWARMA",
-  storyTitle: "Un moment de plaisir.",
-  storyTitle2: "Et de partage",
-  storyDesc:
-    "Ce n’est pas seulement un shawarma, c’est un moment de plaisir et de partage",
-  storyArabic: "لمعلومة مكتنساااش",
-  storyCaption: "جربوها أو غادي تحسو بالفرق",
-  storyOne: "Pour les amoureux du cheddar",
-  storyOneDesc: "Un shawarma généreux, fondant et plein de goût",
-  storyTwo: "Lma3louma Mexicaine 🇲🇽",
-  storyTwoDesc: "🇲🇽 Lma3louma Mexicaine, le mix parfait entre douceur du guacamole et piquant des jalapeños.",
   locationEyebrow: "LE PLAISIR SE PARTAGE À CASA",
   locationTitle: "Votre moment Lma3louma.",
   locationDesc: "À Maârif ou à Jnane Californie, حس بالفرق من أول لقمة",
@@ -126,7 +112,6 @@ const fr = {
 };
 const en = {
   menu: "The menu",
-  story: "Our spirit",
   locations: "Find us",
   order: "Order now",
   orderGlovo: "Order on Glovo",
@@ -178,20 +163,7 @@ const en = {
   familyEyebrow: "A MOMENT TO SHARE",
   familyTitle: "Enjoy it together.",
   familyTitle2: "Share a Family Box.",
-  familyDesc:
-    "It’s more than a shawarma. It’s a moment of pleasure and sharing",
   familyCta: "Discover the Family Box",
-  storyEyebrow: "IT’S MORE THAN A SHAWARMA",
-  storyTitle: "A moment of pleasure.",
-  storyTitle2: "Made for sharing",
-  storyDesc:
-    "It’s more than a shawarma. It’s a moment of pleasure and sharing",
-  storyArabic: "لمعلومة مكتنساااش",
-  storyCaption: "جربوها أو غادي تحسو بالفرق",
-  storyOne: "For cheddar lovers",
-  storyOneDesc: "A generous, melt-in-your-mouth shawarma, full of flavour",
-  storyTwo: "Lma3louma Mexican 🇲🇽",
-  storyTwoDesc: "🇲🇽 Lma3louma Mexican, the perfect mix of smooth guacamole and spicy jalapeños.",
   locationEyebrow: "SHARE THE PLEASURE IN CASA",
   locationTitle: "Your Lma3louma moment.",
   locationDesc: "In Maârif or Jnane Californie, feel the difference from the first bite",
@@ -248,7 +220,6 @@ const en = {
 };
 const ar = {
   menu: "القائمة",
-  story: "روح المعلومة",
   locations: "عناويننا",
   order: "اطلب الآن",
   orderGlovo: "اطلب على غلوفو",
@@ -300,20 +271,7 @@ const ar = {
   familyEyebrow: "لحظة ديال المتعة واللمة",
   familyTitle: "اللذة كتجمعنا.",
   familyTitle2: "فبوكس العائلة.",
-  familyDesc:
-    "ماشي غير شاورما، هادي لحظة ديال المتعة واللمة",
   familyCta: "اكتشف بوكس العائلة",
-  storyEyebrow: "ماشي غير شاورما",
-  storyTitle: "لمعلومة",
-  storyTitle2: "مكتنساااش",
-  storyDesc:
-    "ماشي غير شاورما، هادي لحظة ديال المتعة واللمة",
-  storyArabic: "لمعلومة مكتنساااش",
-  storyCaption: "جربوها أو غادي تحسو بالفرق",
-  storyOne: "لعشاق الشيدر",
-  storyOneDesc: "شاورما عامرة، دايبة فالّفم ومليانة بالذوق",
-  storyTwo: "لمعلومة مكسيكية 🇲🇽",
-  storyTwoDesc: "🇲🇽 لمعلومة مكسيكية، المزيج بين نعومة الغواكامولي وحرورية الهالابينو.",
   locationEyebrow: "لحظة ديال المتعة فكازا",
   locationTitle: "جربوها أو غادي تحسو بالفرق",
   locationDesc: "فالمعاريف أو فجنان كاليفورنيا، حس بالفرق من أول لقمة",
@@ -364,9 +322,9 @@ const ar = {
   prevMonth: "الشهر السابق",
   nextMonth: "الشهر القادم",
 };
-let saved = "fr";
+let saved = "ar";
 try {
-  saved = localStorage.getItem("lma-language") || "fr";
+  saved = localStorage.getItem("lma-language") || "ar";
 } catch {
   /* Storage is optional. */
 }
@@ -378,8 +336,8 @@ i18n
       en: { translation: en },
       ar: { translation: ar },
     },
-    lng: ["fr", "en", "ar"].includes(saved) ? saved : "fr",
-    fallbackLng: "fr",
+    lng: ["fr", "en", "ar"].includes(saved) ? saved : "ar",
+    fallbackLng: "ar",
     interpolation: { escapeValue: false },
   });
 export default i18n;

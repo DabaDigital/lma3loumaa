@@ -1,18 +1,102 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Star, MessageSquare, RefreshCw } from "lucide-react";
+import {
+  Star,
+  MessageSquare,
+  RefreshCw,
+  ImageIcon,
+  ChevronDown,
+} from "lucide-react";
 import { Button, Modal } from "./components";
 import type { Locale } from "./data";
 import { ReviewPhoto } from "./ReviewPhoto";
-import { useReviewList } from "./reviews";
+import { useReviewList, type Review } from "./reviews";
 import { reviewCopy } from "./reviewCopy";
 import { ContentSkeleton } from "./Skeleton";
 
 const ReviewForm = lazy(() => import("./ReviewForm"));
 
+function ReviewCard({
+  review,
+  locale,
+  t,
+}: {
+  review: Review;
+  locale: Locale;
+  t: (key: keyof typeof reviewCopy) => string;
+}) {
+  const [photoOpen, setPhotoOpen] = useState(false);
+  // Download the photo on first open, then keep it so closing can animate.
+  const [photoRequested, setPhotoRequested] = useState(false);
+  const photoId = useId();
+  return (
+    <article className={`review-card${photoOpen ? " is-photo-open" : ""}`}>
+      <div className="review-card-body">
+        <div className="review-card-copy">
+          <div className="review-card-meta">
+            <span
+              className="review-display-stars"
+              role="img"
+              aria-label={`${review.rating} / 5`}
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Star
+                  key={n}
+                  size={16}
+                  fill={n <= review.rating ? "currentColor" : "none"}
+                />
+              ))}
+            </span>
+            <time dateTime={review.created_at}>
+              {new Intl.DateTimeFormat(locale, {
+                dateStyle: "medium",
+              }).format(new Date(review.created_at))}
+            </time>
+          </div>
+          <h3 dir="auto">{review.title}</h3>
+          {review.description && <p dir="auto">{review.description}</p>}
+        </div>
+        {review.image_path && (
+          <button
+            type="button"
+            className="review-photo-toggle"
+            aria-expanded={photoOpen}
+            aria-controls={photoId}
+            onClick={() => {
+              setPhotoRequested(true);
+              setPhotoOpen((open) => !open);
+            }}
+          >
+            <ImageIcon size={16} aria-hidden="true" />
+            {t(photoOpen ? "hidePhoto" : "showPhoto")}
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className="review-photo-chevron"
+            />
+          </button>
+        )}
+      </div>
+      {review.image_path && (
+        <div id={photoId} className="review-photo-panel">
+          <div>
+            {photoRequested && (
+              <ReviewPhoto
+                path={review.image_path}
+                alt={review.title}
+                width={800}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
 export function Reviews() {
   const { i18n } = useTranslation();
-  const locale = (i18n.resolvedLanguage || "fr") as Locale;
+  const locale = (i18n.resolvedLanguage || "ar") as Locale;
   const t = (key: keyof typeof reviewCopy) => reviewCopy[key][locale];
   const { reviews, loading, error, refresh } = useReviewList();
   const [open, setOpen] = useState(false);
@@ -59,35 +143,12 @@ export function Reviews() {
           <>
             <div className="reviews-grid">
               {reviews.slice(0, visible).map((review) => (
-                <article className="review-card" key={review.id}>
-                  <ReviewPhoto path={review.image_path} alt={review.title} />
-                  <div className="review-card-copy">
-                    <div className="review-card-meta">
-                      <span
-                        className="review-display-stars"
-                        role="img"
-                        aria-label={`${review.rating} / 5`}
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <Star
-                            key={n}
-                            size={16}
-                            fill={n <= review.rating ? "currentColor" : "none"}
-                          />
-                        ))}
-                      </span>
-                      <time dateTime={review.created_at}>
-                        {new Intl.DateTimeFormat(locale, {
-                          dateStyle: "medium",
-                        }).format(new Date(review.created_at))}
-                      </time>
-                    </div>
-                    <h3 dir="auto">{review.title}</h3>
-                    {review.description && (
-                      <p dir="auto">{review.description}</p>
-                    )}
-                  </div>
-                </article>
+                <ReviewCard
+                  key={review.id}
+                  review={review}
+                  locale={locale}
+                  t={t}
+                />
               ))}
             </div>
             {visible < reviews.length && (

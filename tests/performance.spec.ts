@@ -33,6 +33,28 @@ test("mobile gets a small, prioritized hero and responsive bundled photos", asyn
   );
 });
 
+test("desktop menu cards download the smallest photo variant", async ({
+  page,
+}) => {
+  await page.goto("/");
+  // The showcase above the cards shows the signature dish large. A card may
+  // reuse that cached copy, so judge the cards by what they download.
+  const feature = page.locator(".flavor-main-visual img");
+  await feature.scrollIntoViewIfNeeded();
+  await expect(feature).not.toHaveClass(/skeleton-image/);
+  const requested: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().includes("/optimized/")) requested.push(request.url());
+  });
+  await page.locator(".menu-showcase-catalog-trigger").click();
+  const photos = page.locator(".menu-catalog .food-stage img");
+  await photos.first().scrollIntoViewIfNeeded();
+  for (const index of [0, 1, 2, 3])
+    await expect(photos.nth(index)).not.toHaveClass(/skeleton-image/);
+  expect(requested.length).toBeGreaterThan(0);
+  for (const url of requested) expect(url).toMatch(/-384-[0-9a-f]+\.webp$/);
+});
+
 test("every generated responsive variant exists and decodes", async ({
   page,
 }) => {

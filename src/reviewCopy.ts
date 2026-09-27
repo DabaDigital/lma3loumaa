@@ -65,6 +65,8 @@ export const reviewCopy = {
     "JPG أو PNG أو WebP · حتى 5 ميغابايت",
   ),
   removePhoto: l("Retirer la photo", "Remove photo", "إزالة الصورة"),
+  showPhoto: l("Voir la photo", "View photo", "عرض الصورة"),
+  hidePhoto: l("Masquer la photo", "Hide photo", "إخفاء الصورة"),
   submit: l("Envoyer mon avis", "Submit review", "إرسال رأيي"),
   sending: l("Envoi en cours…", "Submitting…", "جارٍ الإرسال…"),
   captchaLoading: l(

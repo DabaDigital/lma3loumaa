@@ -9,10 +9,13 @@ export function ReviewPhoto({
   path,
   alt,
   className = "",
+  width,
 }: {
   path: string | null;
   alt: string;
   className?: string;
+  /** Download a resized copy this wide instead of the original upload. */
+  width?: number;
 }) {
   const [photo, setPhoto] = useState<{ path: string; url: string } | null>(
     null,
@@ -25,9 +28,20 @@ export function ReviewPhoto({
     let objectUrl: string | undefined;
     setPhoto(null);
     setFailed(false);
-    void supabase.storage
-      .from(REVIEW_BUCKET)
-      .download(path, {}, { cache: "no-store" })
+    const bucket = supabase.storage.from(REVIEW_BUCKET);
+    const original = () => bucket.download(path, {}, { cache: "no-store" });
+    // Fall back to the original if Supabase cannot resize it.
+    void (
+      width
+        ? bucket
+            .download(
+              path,
+              { transform: { width, resize: "contain", quality: 75 } },
+              { cache: "no-store" },
+            )
+            .then((result) => (result.error ? original() : result))
+        : original()
+    )
       .then(({ data, error }) => {
         if (!active) return;
         if (error || !data) {
@@ -44,7 +58,7 @@ export function ReviewPhoto({
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [path]);
+  }, [path, width]);
   if (!path) return null;
   const unavailable =
     i18n.resolvedLanguage === "ar"
@@ -55,7 +69,11 @@ export function ReviewPhoto({
   return (
     <div className={`review-photo ${className}`}>
       {photo?.path === path && !failed ? (
-        <LoadingImage src={photo.url} alt={alt} onError={() => setFailed(true)} />
+        <LoadingImage
+          src={photo.url}
+          alt={alt}
+          onError={() => setFailed(true)}
+        />
       ) : failed ? (
         <span role="img" aria-label={unavailable}>
           <ImageOff size={24} />

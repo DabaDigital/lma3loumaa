@@ -434,3 +434,33 @@ test("photo upload fills the image URL, rejects bad files and saves", async ({
     page.getByRole("row").filter({ hasText: "Shawarma photo" }),
   ).toHaveCount(1);
 });
+
+test("uploaded menu photos load resized, and fall back to the original if resizing fails", async ({
+  page,
+}) => {
+  const data = await backend(page);
+  const storage = "https://test-project.supabase.co/storage/v1";
+  data.menu_items[0].image = `${storage}/object/public/menu-images/items/one.png`;
+  data.menu_items[1].image = `${storage}/object/public/menu-images/items/two.png`;
+  const resized: string[] = [];
+  await page.route(`${storage}/render/image/public/**`, (route) => {
+    resized.push(route.request().url());
+    return route.request().url().includes("two.png")
+      ? route.fulfill({ status: 400 })
+      : route.fulfill({ contentType: "image/webp", body: PIXEL });
+  });
+  await page.goto("/");
+  const one = page.locator('#menu .food-stage img[src*="one.png"]');
+  await one.scrollIntoViewIfNeeded();
+  await expect(one).toHaveAttribute(
+    "src",
+    `${storage}/render/image/public/menu-images/items/one.png?width=768&resize=contain&quality=75`,
+  );
+  await expect(one).toHaveAttribute("srcset", /width=384&.* 384w/);
+  await expect(one).not.toHaveClass(/skeleton-image/);
+  expect(resized.some((url) => url.includes("one.png"))).toBe(true);
+  const two = page.locator('#menu .food-stage img[src*="two.png"]');
+  await expect(two).toHaveAttribute("src", data.menu_items[1].image);
+  await expect(two).not.toHaveAttribute("srcset", /.+/);
+  await expect(two).not.toHaveClass(/skeleton-image/);
+});

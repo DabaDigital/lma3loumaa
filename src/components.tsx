@@ -414,7 +414,7 @@ export function DatePicker({
   min: string;
 }) {
   const { t, i18n } = useTranslation();
-  const tag = tags[i18n.resolvedLanguage || "fr"] || "fr-MA";
+  const tag = tags[i18n.resolvedLanguage || "ar"] || "ar-MA";
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => parse(value));
   const [cursor, setCursor] = useState(value);
@@ -734,10 +734,13 @@ export function FoodVisual({
   kind,
   className = "",
   label = "",
+  sizes,
 }: {
   kind: string;
   className?: string;
   label?: string;
+  /** Rendered width of the photo; lets small tiles pick a small file. */
+  sizes?: string;
 }) {
   const photo = foodImages[kind as FoodImage];
   if (!photo) {
@@ -751,6 +754,7 @@ export function FoodVisual({
               src={kind}
               alt={label}
               loading="lazy"
+              sizes={sizes}
               onLoad={(event) => void syncFoodBackground(event.currentTarget)}
               onError={(event) => resetFoodBackground(event.currentTarget)}
             />
@@ -794,9 +798,10 @@ export function FoodVisual({
           loading={className.includes("hero") ? "eager" : "lazy"}
           fetchPriority={className.includes("hero") ? "high" : "auto"}
           sizes={
-            className.includes("hero")
+            sizes ??
+            (className.includes("hero")
               ? "(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 600px"
-              : "(max-width: 600px) 100vw, 600px"
+              : "(max-width: 600px) 100vw, 600px")
           }
           onLoad={(event) => void syncFoodBackground(event.currentTarget)}
           onError={(event) => resetFoodBackground(event.currentTarget)}

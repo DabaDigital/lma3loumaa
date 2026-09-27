@@ -6,13 +6,19 @@ test("menu shots", async ({ page }) => {
   await page.evaluate(async () => {
     await document.fonts.ready;
     document.documentElement.dataset.motion = "off";
-    document.querySelectorAll(".reveal").forEach((e) => e.classList.add("is-visible"));
+    document
+      .querySelectorAll(".reveal")
+      .forEach((e) => e.classList.add("is-visible"));
   });
+  await page.locator(".menu-showcase-catalog-trigger").click();
   await page.locator(".category-tabs").scrollIntoViewIfNeeded();
   await page.waitForTimeout(700);
   await page.screenshot({ path: "test-results/menu-all.png" });
 
-  await page.locator(".category-tabs").getByRole("button", { name: "À côté", exact: true }).click();
+  await page
+    .locator(".category-tabs")
+    .getByRole("button", { name: "À côté", exact: true })
+    .click();
   await page.waitForTimeout(500);
   await page.screenshot({ path: "test-results/menu-extras.png" });
 });

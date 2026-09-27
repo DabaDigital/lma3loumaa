@@ -1,10 +1,14 @@
 import { defineConfig } from "@playwright/test";
 import adminConfig from "./playwright.admin.config";
+import { frenchSaved } from "./tests/locale";
 
 // Exercise the emitted chunks with the existing mocked backend, not live data.
 export default defineConfig(adminConfig, {
   outputDir: "./artifacts/performance/production-test-results",
-  use: { baseURL: "http://127.0.0.1:5176" },
+  use: {
+    baseURL: "http://127.0.0.1:5176",
+    storageState: frenchSaved("http://127.0.0.1:5176"),
+  },
   webServer: {
     command:
       "npm run build -- --outDir artifacts/performance/production-dist && npm run preview -- --outDir artifacts/performance/production-dist --port 5176 --strictPort",

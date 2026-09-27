@@ -1,10 +1,12 @@
 import { defineConfig } from "@playwright/test";
+import { frenchSaved } from "./tests/locale";
 export default defineConfig({
   testDir: "./tests",
   testIgnore: "**/admin/**",
   fullyParallel: true,
   use: {
     baseURL: "http://127.0.0.1:5175",
+    storageState: frenchSaved("http://127.0.0.1:5175"),
     headless: true,
     viewport: { width: 1440, height: 1000 },
     launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
