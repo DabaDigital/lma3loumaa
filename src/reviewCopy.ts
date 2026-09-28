@@ -1,26 +1,75 @@
 import { l } from "./data";
 export const reviewCopy = {
-  eyebrow: l("AUTOUR DE LA TABLE", "AROUND THE TABLE", "حول المائدة"),
-  title: l(
-    "Vos moments, vos avis.",
-    "Your moments. Your reviews.",
-    "لحظاتكم وآراؤكم.",
-  ),
+  eyebrow: l("L’AVIS DE NOS CLIENTS", "WHAT OUR GUESTS SAY", "آراء عملائنا"),
+  // The title reads start + accent + end; the accent is highlighted.
+  titleStart: l("Vos moments et ", "Your moments and ", "لحظاتكم "),
+  titleAccent: l("vos avis", "your reviews", "وآراؤكم"),
+  titleEnd: l(" comptent", " matter", " تهمنا"),
   intro: l(
-    "Une bouchée, un souvenir. Racontez-nous votre expérience chez Lma3louma.",
-    "A bite, a memory. Tell us about your time at Lma3louma.",
-    "لقمة وذكرى. شاركونا تجربتكم في المعلومة.",
+    "Découvrez ce que nos clients racontent de leur passage chez nous : chaque avis nous aide à faire encore mieux.",
+    "See what our guests say about their visit — every review helps us do even better.",
+    "اكتشف ما يقوله عملاؤنا عن تجربتهم معنا، فكل رأي يساعدنا على تقديم تجربة أفضل دائماً.",
   ),
   write: l("Donner mon avis", "Write a review", "أضف رأيك"),
-  latestNote: l("LE DERNIER MOT", "THE LATEST WORD", "آخر كلمة منكم"),
-  tableNote: l("UN MOT À TABLE", "A NOTE FROM THE TABLE", "كلمة من الطاولة"),
-  communityRating: l(
-    "La note de nos visiteurs",
-    "Our guests’ rating",
-    "تقييم زوارنا",
+  summary: l("Note de nos clients", "Guest rating", "تقييم عملائنا"),
+  outOf: l("sur 5", "out of 5", "من 5"),
+  // {n} is the formatted number of reviews.
+  countOne: l("{n} avis", "{n} review", "تقييم واحد"),
+  countTwo: l("{n} avis", "{n} reviews", "تقييمان"),
+  countFew: l("{n} avis", "{n} reviews", "{n} تقييمات"),
+  countMany: l("{n} avis", "{n} reviews", "{n} تقييماً"),
+  countOther: l("{n} avis", "{n} reviews", "{n} تقييم"),
+  verdictExcellent: l(
+    "Une note excellente",
+    "An excellent rating",
+    "تقييم ممتاز من عملائنا",
   ),
-  sharedOne: l("avis partagé", "shared review", "رأي منشور"),
-  shared: l("avis partagés", "shared reviews", "آراء منشورة"),
+  verdictGreat: l(
+    "Une très bonne note",
+    "A great rating",
+    "تقييم رائع من عملائنا",
+  ),
+  verdictGood: l("Une bonne note", "A good rating", "تقييم جيد من عملائنا"),
+  verdictNeutral: l(
+    "La note de nos clients",
+    "Our guests’ rating",
+    "تقييم عملائنا",
+  ),
+  verdictProud: l(
+    "Votre confiance nous rend fiers et nous pousse à donner le meilleur, chaque jour.",
+    "Your trust makes us proud and pushes us to give our best, every day.",
+    "نفخر بثقتكم واختياركم الدائم، وهذا ما يدفعنا دائماً لتقديم الأفضل.",
+  ),
+  verdictListening: l(
+    "Chaque avis nous aide à progresser. Merci de le partager avec nous.",
+    "Every review helps us improve. Thank you for sharing yours.",
+    "كل رأي يساعدنا على التحسّن. شكراً لمشاركتنا تجربتكم.",
+  ),
+  breakdown: l("Répartition des notes", "Rating breakdown", "توزيع التقييمات"),
+  // {n} is a star count from 1 to 5.
+  starsLabel: l("{n} étoiles", "{n} stars", "{n} نجوم"),
+  starsTwo: l("{n} étoiles", "{n} stars", "نجمتان"),
+  starLabel: l("{n} étoile", "{n} star", "نجمة واحدة"),
+  sortLabel: l("Trier les avis", "Sort reviews", "ترتيب الآراء"),
+  sortAll: l("Tous", "All", "الكل"),
+  sortRecent: l("Les plus récents", "Newest", "الأحدث"),
+  sortTop: l("Les mieux notés", "Top rated", "الأعلى تقييماً"),
+  pages: l("Pages des avis", "Review pages", "صفحات الآراء"),
+  previous: l("Précédent", "Previous", "السابق"),
+  next: l("Suivant", "Next", "التالي"),
+  // {page} and {pages} are formatted numbers.
+  pageLabel: l("Page {page}", "Page {page}", "الصفحة {page}"),
+  pageStatus: l(
+    "Page {page} sur {pages}",
+    "Page {page} of {pages}",
+    "الصفحة {page} من {pages}",
+  ),
+  // {from}, {to} and {total} are formatted numbers.
+  showing: l(
+    "Avis {from}–{to} sur {total}",
+    "Reviews {from}–{to} of {total}",
+    "عرض {from}–{to} من {total}",
+  ),
   empty: l(
     "Le premier avis sera peut-être le vôtre.",
     "The first review could be yours.",
@@ -74,8 +123,6 @@ export const reviewCopy = {
     "JPG أو PNG أو WebP · حتى 5 ميغابايت",
   ),
   removePhoto: l("Retirer la photo", "Remove photo", "إزالة الصورة"),
-  showPhoto: l("Voir la photo", "View photo", "عرض الصورة"),
-  hidePhoto: l("Masquer la photo", "Hide photo", "إخفاء الصورة"),
   submit: l("Envoyer mon avis", "Submit review", "إرسال رأيي"),
   sending: l("Envoi en cours…", "Submitting…", "جارٍ الإرسال…"),
   captchaLoading: l(
@@ -134,5 +181,4 @@ export const reviewCopy = {
     "Review submissions are temporarily unavailable.",
     "إرسال الآراء غير متاح مؤقتاً.",
   ),
-  more: l("Voir plus d’avis", "Show more reviews", "عرض المزيد من الآراء"),
 };

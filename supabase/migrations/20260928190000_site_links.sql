@@ -21,7 +21,7 @@ create policy "Admins edit links" on public.site_links for update to authenticat
   with check (exists (select 1 from public.admin_users where user_id = (select auth.uid())));
 
 insert into public.site_links (id, url) values
-  ('instagram', ''),
+  ('instagram', 'https://www.instagram.com/lma3loumaa/'),
   ('facebook', ''),
   ('glovo', 'https://glovoapp.com/fr/ma/casablanca/stores/shawarma-lma3louma-cas'),
   ('klit', '')

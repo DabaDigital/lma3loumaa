@@ -144,6 +144,8 @@ try {
 
   await as("anon");
   assert.deepEqual((await rows("select id from public.reviews")).map((row) => row.id), [review]);
+  assert.equal((await rows("select detail_rank from public.reviews"))[0].detail_rank, 3, "a photo and a description rank first in the default order");
+  await assert.rejects(db.exec(`insert into public.reviews(id,title,rating,detail_rank) values ('${rejectedInput}','Test title',5,0)`), /non-DEFAULT value/, "the display rank is derived, never guest supplied");
   assert.deepEqual((await rows("select name from storage.objects")).map((row) => row.name), [photo(review)]);
   await assert.rejects(insertReview(review, photo(review)), /duplicate key/);
   assert.equal((await rows(`update storage.objects set name='${review}/photo.webp' where name='${photo(review)}' returning id`)).length, 0, "published photos still cannot be changed by guests");

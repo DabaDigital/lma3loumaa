@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import type { ReactNode } from "react";
-import { categories, items, locations } from "./data";
+import { categories, instagramUrl, items, locations } from "./data";
 import type { Item, Localized } from "./data";
 import { supabase } from "./supabase";
 
@@ -35,6 +35,9 @@ export const linkIds = ["instagram", "facebook", "glovo", "klit"] as const;
 export type LinkId = (typeof linkIds)[number];
 // Only platforms with a URL are present.
 export type Links = Partial<Record<LinkId, string>>;
+// What visitors see until the dashboard's links are read (or without a
+// database). Glovo's locale-aware default lives in links.tsx.
+const defaultLinks: Links = { instagram: instagramUrl };
 function readLinks(rows: { id: string; url: string }[]): Links {
   return Object.fromEntries(
     rows
@@ -59,7 +62,8 @@ const defaults: Content = {
 const empty: Content = { categories: [], items: [], locations: [] };
 const Context = createContext<
   Content & {
-    links: Links;
+    /** Null until the links table has been read successfully. */
+    links: Links | null;
     linksError: boolean;
     loading: boolean;
     error: boolean;
@@ -67,7 +71,7 @@ const Context = createContext<
   }
 >({
   ...empty,
-  links: {},
+  links: null,
   linksError: false,
   loading: true,
   error: false,
@@ -75,7 +79,7 @@ const Context = createContext<
 });
 export function ContentProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(supabase ? empty : defaults);
-  const [links, setLinks] = useState<Links>({});
+  const [links, setLinks] = useState<Links | null>(null);
   const [linksError, setLinksError] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
   const [error, setError] = useState(false);
@@ -193,6 +197,7 @@ export function usePublicContent() {
         (i) => i.available && availableCategories.has(i.category),
       ),
       locations: content.locations.filter((l) => l.available),
+      links: content.links ?? defaultLinks,
     };
   }, [content]);
 }

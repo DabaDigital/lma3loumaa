@@ -39,6 +39,7 @@ import { orderUrl, platforms } from "./links";
 import type { Item, Locale } from "./data";
 import { makeVisitCalendar } from "./calendar";
 import { Reviews } from "./ReviewSection";
+import { SocialSection } from "./SocialSection";
 import { ContentSkeleton, Skeleton } from "./Skeleton";
 
 function localDate() {
@@ -129,7 +130,7 @@ export default function App() {
     );
     document.querySelectorAll(".reveal").forEach((e) => observer.observe(e));
     return () => observer.disconnect();
-  }, [content.loading, items.length, locations.length, pathname]);
+  }, [content.loading, items.length, locations.length, pathname, links]);
   useEffect(() => {
     if (
       category !== "all" &&
@@ -407,6 +408,9 @@ export default function App() {
               </section>
             )}
             <Reviews />
+            {!content.loading && (
+              <SocialSection links={links} locale={locale} />
+            )}
             <section className="locations-section" id="locations">
               <div className="container section">
                 <div className="section-heading reveal">

@@ -25,7 +25,13 @@ import {
 import { Button, Dropdown, FoodVisual, Modal, Select } from "../components";
 import { supabase } from "../supabase";
 import { useContent } from "../content";
-import type { Category, MenuItem, Location, Managed } from "../content";
+import type {
+  Category,
+  Links,
+  MenuItem,
+  Location,
+  Managed,
+} from "../content";
 import type { Locale } from "../data";
 import { copy } from "./copy";
 import { Editor } from "./Editor";
@@ -37,6 +43,8 @@ import { ContentSkeleton } from "../Skeleton";
 export type ContentSection = "items" | "categories" | "locations";
 export type Section = "overview" | ContentSection | "links" | "reviews";
 const routes = ["items", "categories", "locations", "links", "reviews"];
+// Stable, so the links form does not resync on every render before loading.
+const noLinks: Links = {};
 function isContentSection(section: Section): section is ContentSection {
   return (
     section === "items" || section === "categories" || section === "locations"
@@ -588,7 +596,7 @@ export default function Admin() {
           ) : section === "links" ? (
             <LinksAdmin
               locale={locale}
-              links={content.links}
+              links={content.links ?? noLinks}
               failed={content.linksError}
               onRetry={content.refresh}
               onSaved={async () => {

@@ -74,6 +74,20 @@ export const platforms: Record<
   },
 };
 
+// The account name shown for a profile link, read from the URL the admin saved:
+// instagram.com/lma3loumaa → @lma3loumaa, facebook.com/people/Name/123 → Name.
+export function profileHandle(id: LinkId, url: string) {
+  try {
+    const [first, second] = new URL(url).pathname.split("/").filter(Boolean);
+    const name = decodeURIComponent(first === "people" ? second ?? "" : first ?? "");
+    if (name && !name.includes(".php"))
+      return id === "instagram" ? `@${name}` : name;
+  } catch {
+    // Unparseable links still work; they just show the platform name.
+  }
+  return platforms[id].name;
+}
+
 // Every "Order on Glovo" button needs a destination, even without a database.
 export const orderUrl = (links: Links, locale: Locale) =>
   links.glovo ?? glovoUrl(locale);

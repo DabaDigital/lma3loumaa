@@ -271,6 +271,11 @@ test("social and ordering links are edited in the dashboard and shown on the web
     instagram,
   );
   await expect(footer.getByRole("link", { name: "Facebook" })).toHaveCount(0);
+  // The follow-us section shows the saved profile and its handle.
+  const profile = page.locator(".social-section .social-profile");
+  await expect(profile).toHaveCount(1);
+  await expect(profile).toHaveAttribute("href", instagram);
+  await expect(profile).toContainText("@lma3louma");
   const delivery = page.locator(".delivery-section");
   await expect(
     delivery.getByRole("link", { name: "Commander sur Klit" }),
@@ -284,14 +289,18 @@ test("social and ordering links are edited in the dashboard and shown on the web
     dialog.getByRole("link", { name: "Commander sur Klit" }),
   ).toHaveAttribute("href", klit);
 
-  // An unreadable links table leaves the menu intact and Glovo on its default.
+  // An unreadable links table leaves the menu intact, and Glovo and Instagram
+  // on their built-in defaults.
   await page.route("**/rest/v1/site_links*", (route) =>
     route.fulfill({ status: 404, json: { message: "missing" } }),
   );
   await page.goto("/");
   await expect(page.locator(".location-card")).toHaveCount(2);
   await expect(page.locator(".content-status")).toHaveCount(0);
-  await expect(page.locator(".footer-social")).toHaveCount(0);
+  await expect(
+    page.locator("footer").getByRole("link", { name: "Instagram" }),
+  ).toHaveAttribute("href", "https://www.instagram.com/lma3loumaa/");
+  await expect(page.locator(".social-section .social-profile")).toHaveCount(1);
   await page.locator(".delivery-section").getByRole("button").click();
   await expect(
     page.getByRole("dialog").getByRole("link", { name: "Continuer sur Glovo" }),

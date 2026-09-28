@@ -90,7 +90,7 @@ export function ContentSkeleton({
       </Loading>
     );
   const count =
-    kind === "menu" ? 8 : kind === "locations" ? 2 : kind === "reviews" ? 3 : 4;
+    kind === "menu" ? 8 : kind === "locations" ? 2 : kind === "reviews" ? 6 : 4;
   return (
     <Loading kind={kind}>
       {kind === "menu" && (

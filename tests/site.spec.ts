@@ -499,6 +499,54 @@ test("family box shows its contents, the brand line and even spacing", async ({
   }
 });
 
+test("follow-us section sits between reviews and locations and links to Instagram", async ({
+  page,
+}) => {
+  const instagram = "https://www.instagram.com/lma3loumaa/";
+  await page.goto("/");
+  const order = await page.evaluate(() =>
+    [
+      ...document.querySelectorAll(
+        ".reviews-section, .social-section, .locations-section",
+      ),
+    ].map((e) => e.classList[0]),
+  );
+  expect(order).toEqual([
+    "reviews-section",
+    "social-section",
+    "locations-section",
+  ]);
+  const social = page.locator(".social-section");
+  await expect(social.getByRole("heading", { level: 2 })).toHaveText(
+    "Suivez-nous et restez toujours avec Lma3louma",
+  );
+  await expect(social).toContainText("sur Instagram.");
+  // Without a database only the verified Instagram profile is known, so the
+  // Facebook card moves to Instagram and no Facebook link appears.
+  const profile = social.locator(".social-profile");
+  await expect(profile).toHaveCount(1);
+  await expect(profile).toContainText("@lma3loumaa");
+  await expect(profile).toHaveAttribute("href", instagram);
+  const posts = social.getByRole("list", { name: "Un aperçu de nos photos" });
+  await expect(posts.getByRole("listitem")).toHaveCount(4);
+  for (const link of await posts.getByRole("link").all())
+    await expect(link).toHaveAttribute("href", instagram);
+  await expect(social.locator('a[href*="facebook"]')).toHaveCount(0);
+  await expect(
+    social.getByRole("link", { name: "Voir plus sur Instagram" }),
+  ).toHaveAttribute("target", "_blank");
+  await expect(
+    page.locator("footer").getByRole("link", { name: "Instagram" }),
+  ).toHaveAttribute("href", instagram);
+
+  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("menuitemradio", { name: "العربية" }).click();
+  await expect(social.getByRole("heading", { level: 2 })).toHaveText(
+    "تابعونا وخليكم ديما مع المعلومة",
+  );
+  await expect(social.locator(".social-follow")).toHaveText("تابع");
+});
+
 test("desktop and mobile layouts load without broken assets or runtime errors", async ({
   page,
 }) => {

@@ -373,3 +373,59 @@ export const locations = [
 ];
 export const glovoUrl = (locale: Locale) =>
   `https://glovoapp.com/${locale}/ma/casablanca/stores/shawarma-lma3louma-cas`;
+// Verified on 28 September 2026. The dashboard's links replace it once loaded.
+export const instagramUrl = "https://www.instagram.com/lma3loumaa/";
+// Photo cards for the "follow us" section. They link to the profiles rather
+// than to specific posts, so they carry no captions or counts from social media.
+export const socialPosts: {
+  id: string;
+  platform: "instagram" | "facebook";
+  image: string;
+  tag: Localized;
+  caption: Localized;
+}[] = [
+  {
+    id: "classic",
+    platform: "instagram",
+    image: "/assets/shawarma_normal.png",
+    tag: l("La signature", "The signature", "الأصلية"),
+    caption: l(
+      "Le shawarma Lma3louma, généreux jusqu’à la dernière bouchée.",
+      "The Lma3louma shawarma, generous to the very last bite.",
+      "شاورما المعلومة، عامرة حتى لآخر لقمة.",
+    ),
+  },
+  {
+    id: "maarif",
+    platform: "instagram",
+    image: "/assets/lma3loumaa_maarif.png",
+    tag: l("Chez nous", "Our place", "عندنا"),
+    caption: l(
+      "Maârif, Casablanca : votre table vous attend.",
+      "Maârif, Casablanca: your table is waiting.",
+      "المعاريف، كازا: الطبلة ديالك كتسناك.",
+    ),
+  },
+  {
+    id: "plate",
+    platform: "instagram",
+    image: "/assets/plat_shawarma.png",
+    tag: l("Grande faim", "Big appetite", "جوع كبير"),
+    caption: l(
+      "Le plat shawarma, avec frites et sauces, pour les grosses envies.",
+      "The shawarma platter, with fries and sauces, for big cravings.",
+      "طبق الشاورما بالفريت والصلصات، للجوع الكبير.",
+    ),
+  },
+  {
+    id: "family",
+    platform: "facebook",
+    image: "/assets/family-box-web.png",
+    tag: l("À partager", "To share", "للمشاركة"),
+    caption: l(
+      "La Family Box : une box, et toute la famille autour.",
+      "The Family Box: one box, and the whole family around it.",
+      "فاميلي بوكس: بوكس واحد، والعائلة كاملة ملمومة.",
+    ),
+  },
+];

@@ -93,6 +93,145 @@ export function useReviewList(admin = false) {
   return { reviews, loading, error, refresh };
 }
 
+export type ReviewSort = "all" | "recent" | "top";
+export const REVIEW_PAGE_SIZE = 6;
+export type ReviewStats = {
+  total: number;
+  average: number | null;
+  /** counts[n - 1] is the number of approved n-star reviews. */
+  counts: number[];
+};
+
+const PUBLIC_COLUMNS =
+  "id,title,description,rating,image_path,status,created_at";
+// Until the pagination migration adds detail_rank, "all" falls back to newest.
+let detailRankMissing = false;
+
+async function fetchReviewStats(): Promise<ReviewStats> {
+  const counts = await Promise.all(
+    [1, 2, 3, 4, 5].map(async (rating) => {
+      const { count, error } = await supabase!
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "approved")
+        .eq("rating", rating);
+      if (error) throw error;
+      return count ?? 0;
+    }),
+  );
+  const total = counts.reduce((sum, count) => sum + count, 0);
+  const stars = counts.reduce(
+    (sum, count, index) => sum + count * (index + 1),
+    0,
+  );
+  return { total, average: total ? stars / total : null, counts };
+}
+
+async function fetchReviewPage(sort: ReviewSort, page: number) {
+  const from = (page - 1) * REVIEW_PAGE_SIZE;
+  const query = (byDetail: boolean) => {
+    let request = supabase!
+      .from("reviews")
+      .select(PUBLIC_COLUMNS)
+      .eq("status", "approved");
+    if (sort === "top") request = request.order("rating", { ascending: false });
+    if (byDetail) request = request.order("detail_rank", { ascending: false });
+    return request
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, from + REVIEW_PAGE_SIZE - 1);
+  };
+  const byDetail = sort === "all" && !detailRankMissing;
+  let result = await query(byDetail);
+  if (byDetail && result.error?.code === "42703") {
+    detailRankMissing = true;
+    result = await query(false);
+  }
+  if (result.error) throw result.error;
+  // Fail closed even if the API ever returns unapproved rows.
+  return ((result.data ?? []) as Review[]).filter(
+    (row) => row.status === "approved",
+  );
+}
+
+/** One server-sorted page of approved reviews, plus rating totals. */
+export function usePublicReviews(sort: ReviewSort, page: number) {
+  const [stats, setStats] = useState<ReviewStats | null>(null);
+  const [list, setList] = useState<{ key: string; reviews: Review[] } | null>(
+    null,
+  );
+  const [statsError, setStatsError] = useState(false);
+  const [pageError, setPageError] = useState(false);
+  const key = `${sort}:${page}`;
+  const statsRequest = useRef(0);
+  const pageRequest = useRef(0);
+  const loadStats = useCallback(async () => {
+    if (!supabase) return;
+    const request = ++statsRequest.current;
+    try {
+      const next = await fetchReviewStats();
+      if (request !== statsRequest.current) return;
+      setStats((previous) =>
+        JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
+      );
+      setStatsError(false);
+    } catch {
+      if (request === statsRequest.current) setStatsError(true);
+    }
+  }, []);
+  const loadPage = useCallback(async () => {
+    if (!supabase) return;
+    const request = ++pageRequest.current;
+    setPageError(false);
+    try {
+      const reviews = await fetchReviewPage(sort, page);
+      if (request !== pageRequest.current) return;
+      setList((previous) =>
+        previous?.key === key &&
+        JSON.stringify(previous.reviews) === JSON.stringify(reviews)
+          ? previous
+          : { key, reviews },
+      );
+    } catch {
+      if (request === pageRequest.current) setPageError(true);
+    }
+  }, [sort, page, key]);
+  const refresh = useCallback(
+    () => Promise.all([loadStats(), loadPage()]),
+    [loadStats, loadPage],
+  );
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+  useEffect(() => {
+    void loadPage();
+  }, [loadPage]);
+  // Moderation changes appear when the visitor returns or after a minute.
+  useEffect(() => {
+    const onFocus = () => void refresh();
+    window.addEventListener("focus", onFocus);
+    const timer = window.setInterval(() => {
+      if (!document.hidden) void refresh();
+    }, 60000);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(timer);
+    };
+  }, [refresh]);
+  // A failed background refresh keeps the reviews already on screen.
+  const error =
+    (statsError && !stats) || (pageError && (!list || list.key !== key));
+  return {
+    stats,
+    reviews: list?.reviews ?? [],
+    /** A different page or order is on its way; the previous one stays shown. */
+    pending: !!list && list.key !== key && !error,
+    loading: !!supabase && (!stats || !list) && !error,
+    error,
+    refresh,
+  };
+}
+
 export async function setReviewStatus(
   id: string,
   status: "approved" | "rejected",
