@@ -37,11 +37,17 @@ test("desktop menu cards download the smallest photo variant", async ({
   page,
 }) => {
   await page.goto("/");
-  // The showcase above the cards shows the signature dish large. A card may
-  // reuse that cached copy, so judge the cards by what they download.
-  const feature = page.locator(".flavor-main-visual img");
-  await feature.scrollIntoViewIfNeeded();
-  await expect(feature).not.toHaveClass(/skeleton-image/);
+  // The home page shows the signature dish and the family box large. A card
+  // may reuse those cached copies, so judge the cards by what they download.
+  for (const selector of [
+    ".family-section .food-visual img",
+    ".flavor-feature .flavor-main-visual img",
+  ]) {
+    const photo = page.locator(selector);
+    await photo.scrollIntoViewIfNeeded();
+    await expect(photo).not.toHaveClass(/skeleton-image/);
+  }
+  await page.waitForLoadState("networkidle");
   const requested: string[] = [];
   page.on("request", (request) => {
     if (request.url().includes("/optimized/")) requested.push(request.url());

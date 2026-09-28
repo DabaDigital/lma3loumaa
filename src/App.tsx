@@ -33,8 +33,9 @@ import {
   FoodVisual,
   ExternalLink,
 } from "./components";
-import { categories as initialCategories, glovoUrl } from "./data";
-import { usePublicContent } from "./content";
+import { categories as initialCategories } from "./data";
+import { linkIds, usePublicContent } from "./content";
+import { orderUrl, platforms } from "./links";
 import type { Item, Locale } from "./data";
 import { makeVisitCalendar } from "./calendar";
 import { Reviews } from "./ReviewSection";
@@ -60,7 +61,10 @@ function Brand({ footer = false }: { footer?: boolean }) {
 
 export default function App() {
   const content = usePublicContent();
-  const { items, locations } = content;
+  const { items, locations, links } = content;
+  const socials = linkIds.filter(
+    (id) => platforms[id].kind === "social" && links[id],
+  );
   const categories = [initialCategories[0], ...content.categories];
   const familyItem = items.find((i) => i.id === "family");
   const { t, i18n } = useTranslation();
@@ -356,6 +360,7 @@ export default function App() {
                   combo={combo}
                   onComboChange={setCombo}
                   onSelect={setSelected}
+                  motion={motion}
                 />
               )}
             </section>
@@ -477,6 +482,11 @@ export default function App() {
                   {t("orderGlovo")}
                   <ArrowUpRight size={18} />
                 </Button>
+                {links.klit && (
+                  <ExternalLink href={links.klit} className="button--secondary">
+                    {t("orderKlit")}
+                  </ExternalLink>
+                )}
                 <p>{t("deliveryNote")}</p>
               </div>
             </section>
@@ -488,6 +498,28 @@ export default function App() {
           <div>
             <Brand footer />
             <p>{t("footerText")}</p>
+            {socials.length > 0 && (
+              <div className="footer-social">
+                <span>{t("followUs")}</span>
+                <div>
+                  {socials.map((id) => {
+                    const { name, Icon } = platforms[id];
+                    return (
+                      <a
+                        key={id}
+                        href={links[id]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={name}
+                        title={name}
+                      >
+                        <Icon size={17} />
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
           <div className="footer-links">
             <strong>{t("menu")}</strong>
@@ -514,6 +546,12 @@ export default function App() {
               {t("orderGlovo")}
               <ArrowUpRight size={12} />
             </button>
+            {links.klit && (
+              <a href={links.klit} target="_blank" rel="noopener noreferrer">
+                {t("orderKlit")}
+                <ArrowUpRight size={12} />
+              </a>
+            )}
           </div>
           <div className="footer-tagline">
             <span lang="ar" dir="rtl">
@@ -573,11 +611,19 @@ export default function App() {
               ))}
             </ol>
             <ExternalLink
-              href={glovoUrl(locale)}
+              href={orderUrl(links, locale)}
               className="button--primary full-width"
             >
               {t("glovoOpen")}
             </ExternalLink>
+            {links.klit && (
+              <ExternalLink
+                href={links.klit}
+                className="button--secondary full-width"
+              >
+                {t("orderKlit")}
+              </ExternalLink>
+            )}
             <p className="small-note">{t("deliveryNote")}</p>
           </div>
         </Modal>
@@ -605,6 +651,7 @@ function ItemModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
+  const { links } = usePublicContent();
   const [variant, setVariant] = useState("0"),
     [meal, setMeal] = useState(comboDefault);
   const chosenVariant = item.variants?.[Number(variant)] ?? item.variants?.[0];
@@ -663,7 +710,7 @@ function ItemModal({
           </strong>
         </div>
         <ExternalLink
-          href={glovoUrl(locale)}
+          href={orderUrl(links, locale)}
           className="button--primary full-width"
         >
           {t("orderGlovo")}

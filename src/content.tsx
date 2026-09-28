@@ -31,6 +31,20 @@ export type Content = {
   items: MenuItem[];
   locations: Location[];
 };
+export const linkIds = ["instagram", "facebook", "glovo", "klit"] as const;
+export type LinkId = (typeof linkIds)[number];
+// Only platforms with a URL are present.
+export type Links = Partial<Record<LinkId, string>>;
+function readLinks(rows: { id: string; url: string }[]): Links {
+  return Object.fromEntries(
+    rows
+      .filter(
+        (row) =>
+          linkIds.includes(row.id as LinkId) && /^https:\/\//.test(row.url),
+      )
+      .map((row) => [row.id, row.url]),
+  );
+}
 const defaults: Content = {
   categories: categories
     .filter((c) => c.id !== "all")
@@ -44,10 +58,25 @@ const defaults: Content = {
 };
 const empty: Content = { categories: [], items: [], locations: [] };
 const Context = createContext<
-  Content & { loading: boolean; error: boolean; refresh: () => Promise<void> }
->({ ...empty, loading: true, error: false, refresh: async () => {} });
+  Content & {
+    links: Links;
+    linksError: boolean;
+    loading: boolean;
+    error: boolean;
+    refresh: () => Promise<void>;
+  }
+>({
+  ...empty,
+  links: {},
+  linksError: false,
+  loading: true,
+  error: false,
+  refresh: async () => {},
+});
 export function ContentProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(supabase ? empty : defaults);
+  const [links, setLinks] = useState<Links>({});
+  const [linksError, setLinksError] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
   const [error, setError] = useState(false);
   const request = useRef(0);
@@ -55,12 +84,28 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const version = ++request.current;
     try {
-      const results = await Promise.all(
-        ["categories", "menu_items", "locations"].map((table) =>
-          supabase!.from(table).select("*").order("sort_order").order("id"),
+      const [results, nextLinks] = await Promise.all([
+        Promise.all(
+          ["categories", "menu_items", "locations"].map((table) =>
+            supabase!.from(table).select("*").order("sort_order").order("id"),
+          ),
         ),
-      );
+        // Links live in their own table. Failing to read them (for example
+        // before their migration is applied) must not take the menu down.
+        supabase.from("site_links").select("id,url").then(
+          ({ data: rows, error: failure }) =>
+            failure || !rows ? null : readLinks(rows),
+          () => null,
+        ),
+      ]);
       if (version !== request.current) return;
+      if (nextLinks)
+        setLinks((previous) =>
+          JSON.stringify(previous) === JSON.stringify(nextLinks)
+            ? previous
+            : nextLinks,
+        );
+      setLinksError(!nextLinks);
       if (results.some((r) => r.error)) throw new Error("content unavailable");
       const next = {
         categories: results[0].data as Category[],
@@ -130,8 +175,8 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
   const value = useMemo(
-    () => ({ ...data, loading, error, refresh }),
-    [data, loading, error, refresh],
+    () => ({ ...data, links, linksError, loading, error, refresh }),
+    [data, links, linksError, loading, error, refresh],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

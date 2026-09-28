@@ -20,6 +20,7 @@ import {
   Eye,
   EyeOff,
   MessageSquare,
+  Share2,
 } from "lucide-react";
 import { Button, Dropdown, FoodVisual, Modal, Select } from "../components";
 import { supabase } from "../supabase";
@@ -29,11 +30,13 @@ import type { Locale } from "../data";
 import { copy } from "./copy";
 import { Editor } from "./Editor";
 import { ReviewsAdmin } from "./ReviewsAdmin";
+import { LinksAdmin } from "./LinksAdmin";
 import "./admin.css";
 import { ContentSkeleton } from "../Skeleton";
 
 export type ContentSection = "items" | "categories" | "locations";
-export type Section = "overview" | ContentSection | "reviews";
+export type Section = "overview" | ContentSection | "links" | "reviews";
+const routes = ["items", "categories", "locations", "links", "reviews"];
 function isContentSection(section: Section): section is ContentSection {
   return (
     section === "items" || section === "categories" || section === "locations"
@@ -56,9 +59,7 @@ export default function Admin() {
   const [busy, setBusy] = useState(false);
   const [section, setSection] = useState<Section>(() => {
     const path = window.location.pathname.split("/")[2];
-    return ["items", "categories", "locations", "reviews"].includes(path)
-      ? (path as Section)
-      : "overview";
+    return routes.includes(path) ? (path as Section) : "overview";
   });
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -147,11 +148,7 @@ export default function Admin() {
   useEffect(() => {
     const pop = () => {
       const path = location.pathname.split("/")[2];
-      setSection(
-        ["items", "categories", "locations", "reviews"].includes(path)
-          ? (path as Section)
-          : "overview",
-      );
+      setSection(routes.includes(path) ? (path as Section) : "overview");
       setEditing(null);
       setDeleting(null);
     };
@@ -302,6 +299,7 @@ export default function Admin() {
   const links = [
     { id: "overview", label: "overview", icon: LayoutDashboard },
     ...contentLinks,
+    { id: "links", label: "links", icon: Share2 },
     { id: "reviews", label: "reviews", icon: MessageSquare },
   ] as const;
   const rows = !isContentSection(section)
@@ -431,7 +429,9 @@ export default function Admin() {
                   ? t("intro")
                   : section === "reviews"
                     ? t("reviewsHelp")
-                    : t("visibleHelp")}
+                    : section === "links"
+                      ? t("linksHelp")
+                      : t("visibleHelp")}
               </p>
             </div>
             {isContentSection(section) && (
@@ -458,7 +458,7 @@ export default function Admin() {
               {failure}
             </p>
           )}
-          {section !== "reviews" && content.error && (
+          {section !== "reviews" && section !== "links" && content.error && (
             <div className="admin-error" role="alert">
               {t("loadError")}{" "}
               <button onClick={() => void content.refresh()}>
@@ -585,6 +585,17 @@ export default function Admin() {
                 </div>
               </section>
             </>
+          ) : section === "links" ? (
+            <LinksAdmin
+              locale={locale}
+              links={content.links}
+              failed={content.linksError}
+              onRetry={content.refresh}
+              onSaved={async () => {
+                setNotice("saved");
+                await content.refresh();
+              }}
+            />
           ) : (
             <section className="admin-panel">
               <div className="admin-filters">

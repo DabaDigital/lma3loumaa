@@ -6,6 +6,25 @@ export const copy = {
   categories: l("Catégories", "Categories", "الفئات"),
   locations: l("Restaurants", "Locations", "الفروع"),
   reviews: l("Avis clients", "Customer reviews", "آراء الزبائن"),
+  links: l("Réseaux & liens", "Social & links", "التواصل والروابط"),
+  linksHelp: l(
+    "Vos réseaux sociaux et vos liens de commande, affichés sur la page d’accueil. Un champ vide n’apparaît pas sur le site.",
+    "Your social profiles and ordering links, shown on the home page. Empty fields are not shown on the website.",
+    "حساباتك على مواقع التواصل وروابط الطلب، تظهر في الصفحة الرئيسية. الحقول الفارغة لا تظهر على الموقع.",
+  ),
+  socialLinks: l("Réseaux sociaux", "Social media", "مواقع التواصل"),
+  orderLinks: l("Liens de commande", "Ordering links", "روابط الطلب"),
+  linkHelp: l(
+    "Lien HTTPS complet. Laissez vide pour masquer.",
+    "Full HTTPS link. Leave empty to hide.",
+    "رابط HTTPS كامل. اتركه فارغاً لإخفائه.",
+  ),
+  glovoLinkHelp: l(
+    "Obligatoire : utilisé par tous les boutons « Commander sur Glovo ».",
+    "Required: used by every “Order on Glovo” button.",
+    "إلزامي: يُستخدم في جميع أزرار «اطلب على غلوفو».",
+  ),
+  openLink: l("Ouvrir le lien", "Open link", "فتح الرابط"),
   reviewsHelp: l(
     "Vérifiez les avis et leurs photos avant publication. Seuls les avis approuvés apparaissent sur le site.",
     "Check reviews and photos before publishing. Only approved reviews appear on the website.",

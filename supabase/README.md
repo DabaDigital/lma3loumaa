@@ -2,7 +2,7 @@
 
 The website and `/admin` share the same Supabase content tables. The configured project already has an admin account. The guest review migration and private review photo storage were applied to that project on 2026-09-08. The steps below are for setting up another project; do not re-run the full setup on the configured database.
 
-1. In your chosen Supabase project's SQL Editor, run each file in `migrations/` in filename order. They create `categories`, `menu_items`, `locations`, `admin_users` and `reviews`, with row-level security and validation. Content tables also use Realtime publication membership; reviews use periodic/focus refreshes.
+1. In your chosen Supabase project's SQL Editor, run each file in `migrations/` in filename order. They create `categories`, `menu_items`, `locations`, `site_links`, `admin_users` and `reviews`, with row-level security and validation. On an existing deployment, apply only `migrations/20260928190000_site_links.sql` to enable the dashboard's social and ordering links; until then the website keeps working with its built-in Glovo link. Content tables also use Realtime publication membership; reviews use periodic/focus refreshes.
 2. Run `seed.sql` once to import the existing 8 categories, 24 menu entries and 2 locations. It preserves existing records on ID conflicts. `npm run seed:generate` regenerates this seed from `src/data.ts` (Node 22.13+).
 
    Steps 1, 2 and 5 plus the private review image bucket can be done in a single paste instead. `npm run db:setup -- you@example.com` concatenates the migrations, `review-storage.sql`, the seed and the admin grant into `supabase/setup.sql`, ready to run once in the SQL Editor. SQL is copied verbatim from the files covered by the database test scripts. The file is gitignored because it embeds an admin email, and it is **not** re-runnable — the schema section uses plain `create table`, so a second run fails with "already exists".
@@ -23,7 +23,7 @@ from public.admin_users a join auth.users u on u.id = a.user_id;
 
 6. To enable photo uploads in the dashboard, run `storage.sql` in the SQL Editor. It creates the public `menu-images` bucket (5 MB, JPEG/PNG/WebP/AVIF) and restricts writes to `admin_users`, the same membership check the content tables use. This file is re-runnable and deliberately sits outside `migrations/`: it touches the platform `storage` schema, which only exists on a real Supabase project, while `npm run test:database` replays `migrations/` in plain PostgreSQL. Skip this step to keep image URLs typed by hand.
 7. Run `review-storage.sql` to enable visitor review photos, unless you used the generated setup file. It creates the **private** `review-images` bucket and its moderation-aware policies. Run `migrations/20260907153833_guest_reviews.sql` first. For an existing deployment, apply only that new migration and this storage file; do not re-run the full setup or original content migration.
-8. Open `/admin` and sign in. Verify an edit on the public website, then run Supabase's Security Advisor for the connected project. Configure your static host to serve `index.html` for `/admin`, `/admin/items`, `/admin/categories`, `/admin/locations`, `/admin/reviews` and `/components`.
+8. Open `/admin` and sign in. Verify an edit on the public website, then run Supabase's Security Advisor for the connected project. Configure your static host to serve `index.html` for `/admin`, `/admin/items`, `/admin/categories`, `/admin/locations`, `/admin/links`, `/admin/reviews` and `/components`.
 
 To revoke an admin, delete their row from `admin_users` in the trusted SQL Editor. Write access stops immediately through RLS, including for existing JWTs. Sign out/revoke their Auth sessions separately if the account itself should lose access.
 
@@ -35,6 +35,7 @@ To revoke an admin, delete their row from `admin_users` in the trusted SQL Edito
 - Hiding a category hides its dishes from public reads. Deleting a category that still has dishes is blocked by a foreign key and by the dashboard; move/delete its dishes first.
 - Public visitors can read visible content. Authenticated users only get write access when their Auth user ID exists in `admin_users`. Clients cannot insert or modify admin memberships.
 - Realtime database events refresh website data. Focus and 30-second refreshes recover missed events. A failed request displays an error; it does not replace database content with starter records. When Supabase is not configured, the public site uses its original static menu and the admin route explains that setup is needed.
+- **Social & links** holds one HTTPS URL each for Instagram, Facebook, Glovo and Klit. Instagram and Facebook appear as icons in the website footer; Klit appears beside the Glovo order buttons. An empty URL hides that platform. Glovo is required because every "Order on Glovo" button uses it. The four rows are fixed: admins can only change their URLs. Links refresh on focus and every 30 seconds rather than through Realtime.
 - The website does not manage Glovo's catalog. Changes here update this website only.
 
 ## Guest reviews and moderation

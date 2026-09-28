@@ -17,6 +17,15 @@ await db.exec(
   ),
 );
 await db.exec(
+  readFileSync(
+    new URL(
+      "../supabase/migrations/20260928190000_site_links.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+await db.exec(
   readFileSync(new URL("../supabase/seed.sql", import.meta.url), "utf8"),
 );
 await db.exec(
@@ -138,6 +147,50 @@ try {
     (await db.query(`select id from menu_items where category='shawarma'`)).rows
       .length > 0,
   );
+  // Social and ordering links: fixed public rows whose URLs only admins edit.
+  const setLink = (id, url) =>
+    db.query(`update site_links set url='${url}' where id='${id}' returning id`);
+  await as("anon");
+  assert.deepEqual(
+    (await db.query("select id from site_links order by id")).rows.map(
+      (r) => r.id,
+    ),
+    ["facebook", "glovo", "instagram", "klit"],
+  );
+  await assert.rejects(
+    setLink("instagram", "https://evil.example"),
+    /permission denied/,
+  );
+  await as("authenticated", "00000000-0000-0000-0000-000000000002");
+  assert.equal(
+    (await setLink("instagram", "https://evil.example")).rows.length,
+    0,
+  );
+  await as("authenticated", "00000000-0000-0000-0000-000000000001");
+  assert.equal(
+    (await setLink("instagram", "https://www.instagram.com/lma3louma")).rows
+      .length,
+    1,
+  );
+  assert.equal((await setLink("instagram", "")).rows.length, 1);
+  await assert.rejects(
+    setLink("facebook", "javascript:alert(1)"),
+    /check constraint/,
+  );
+  await assert.rejects(setLink("klit", "https://a b"), /check constraint/);
+  await assert.rejects(setLink("glovo", ""), /check constraint/);
+  await assert.rejects(
+    db.exec(`update site_links set id='tiktok' where id='klit'`),
+    /permission denied/,
+  );
+  await assert.rejects(
+    db.exec(`insert into site_links(id,url) values ('tiktok','')`),
+    /permission denied/,
+  );
+  await assert.rejects(
+    db.exec(`delete from site_links where id='klit'`),
+    /permission denied/,
+  );
   await db.exec("reset role; delete from admin_users");
   await as("authenticated", "00000000-0000-0000-0000-000000000001");
   assert.equal(
@@ -145,8 +198,12 @@ try {
       .length,
     0,
   );
+  assert.equal(
+    (await setLink("klit", "https://app.klit.ma/restaurants/x")).rows.length,
+    0,
+  );
   console.log(
-    "PASS: migration, seed, admin CRUD, anonymous/non-admin denial, no self-promotion, validation, category restrictions, publication filtering, and immediate admin revocation.",
+    "PASS: migration, seed, admin CRUD, anonymous/non-admin denial, no self-promotion, validation, category restrictions, publication filtering, site link permissions and validation, and immediate admin revocation.",
   );
 } finally {
   await db.close();

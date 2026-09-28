@@ -10,9 +10,30 @@
   --stage-ink: var(--dark);
   --stage-soft: #4a6567;
   --stage-amber: #b97c12;
+  /* A side dish's name and price, relative to the feature's. */
+  --name-shrink: 0.72;
+  --neighbor-price-size: 24px;
   background: radial-gradient(ellipse at 50% 40%, #fffdf8 0, #f8f3e9 62%);
   color: var(--stage-ink);
   overflow: clip;
+}
+/* Shawarmas: a native sticky runway holds the stage below the header while
+   vertical scroll slides the dishes along, then releases the page. The hook
+   keeps the stage in view when a category change grows or collapses it. */
+.menu-showcase-runway {
+  background: #f8f3e9;
+}
+.menu-showcase-runway[data-pinned="true"] > .menu-showcase-stage {
+  position: sticky;
+  top: var(--showcase-pin-top);
+  min-height: var(--showcase-room);
+  display: grid;
+  align-content: center;
+}
+.menu-showcase-runway[data-pinned="true"]::after {
+  content: "";
+  display: block;
+  height: var(--showcase-travel);
 }
 .menu-showcase .container {
   width: min(1480px, calc(100% - 96px));
@@ -164,6 +185,7 @@
   display: grid;
   grid-template-columns: subgrid;
   grid-template-rows: subgrid;
+  position: relative;
   touch-action: pan-y;
   outline-offset: -3px;
 }
@@ -194,14 +216,31 @@
   color: var(--dark);
   background: var(--gold);
 }
-.flavor-feature {
+/* Every dish is laid out in the feature's place; the track then moves each
+   one sideways, shrinking it into a side slot. The teal disc stays put. */
+.flavor-slide,
+.flavor-halo {
   grid-column: 2;
   grid-row: 1 / span 2;
   padding-top: 92px;
   text-align: center;
   position: relative;
+}
+.flavor-halo {
+  z-index: 0;
+  pointer-events: none;
+}
+.flavor-slide {
   z-index: 1;
-  animation: flavor-enter 300ms ease-out both;
+  transform-origin: 50% var(--slide-origin, 50%);
+  will-change: transform, opacity;
+  transition: translate 200ms;
+}
+.flavor-carousel:has(> .flavor-neighbor--previous:hover)
+  > .flavor-slide[data-side="previous"],
+.flavor-carousel:has(> .flavor-neighbor--next:hover)
+  > .flavor-slide[data-side="next"] {
+  translate: 0 -5px;
 }
 .flavor-main-art {
   position: relative;
@@ -286,10 +325,46 @@
 .flavor-price-badge > span:not(.sr-only) {
   font-size: 12px;
 }
+/* --near runs from 0 at the center to 1 in a side slot, set per dish by the
+   track: a side dish is a dimmed photo with its name and price. */
+.flavor-slide .flavor-main-visual {
+  opacity: calc(1 - var(--near, 0) * 0.12);
+}
+.flavor-slide .flavor-price-badge {
+  opacity: calc(1 - var(--near, 0) * 2);
+}
 .flavor-feature-copy {
   position: relative;
   z-index: 2;
   padding-top: 2px;
+}
+.flavor-slide-title {
+  position: relative;
+  scale: calc(1 - var(--near, 0) * (1 - var(--name-shrink)));
+  transform-origin: 50% 0;
+  color: color-mix(
+    in srgb,
+    var(--stage-soft) calc(var(--near, 0) * 100%),
+    var(--stage-ink)
+  );
+}
+/* Sized so it reads at --neighbor-price-size once the dish is in its slot. */
+.flavor-slide-price {
+  --shrunk: calc(var(--neighbor-scale, 1) * var(--name-shrink));
+  position: absolute;
+  top: 100%;
+  inset-inline: 0;
+  margin-top: calc(4px / var(--shrunk));
+  font-size: calc(var(--neighbor-price-size) / var(--shrunk));
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: calc(var(--near, 0) * 2 - 1);
+}
+.flavor-slide-price small {
+  font-size: 0.54em;
+}
+.flavor-slide-details {
+  opacity: calc(1 - var(--near, 0) * 2.2);
 }
 .flavor-feature-copy h3 {
   font-size: clamp(30px, 2.9vw, 48px);
@@ -315,23 +390,18 @@
   border: 0;
   box-shadow: 0 10px 22px #b97c1238;
 }
-/* Side dishes sit under the intro, level with the lower half of the feature. */
+/* Side slots sit under the intro, level with the lower half of the feature.
+   They are the click targets; the track slides the dishes themselves in. */
 .flavor-neighbor {
   grid-row: 2;
   align-self: start;
   justify-self: center;
   width: min(100% - 64px, 330px);
+  position: relative;
+  z-index: 2;
   background: transparent;
-  color: var(--stage-soft);
-  text-align: center;
   padding: 0;
-  transition:
-    opacity 200ms,
-    transform 200ms;
-}
-.flavor-neighbor:hover {
-  transform: translateY(-5px);
-  color: var(--stage-ink);
+  border-radius: 16px;
 }
 .flavor-neighbor--previous {
   grid-column: 1;
@@ -339,30 +409,35 @@
 .flavor-neighbor--next {
   grid-column: 3;
 }
-.menu-showcase .flavor-neighbor-visual {
-  width: 100%;
+.flavor-slot-art {
+  display: block;
   height: 200px;
-  opacity: 0.88;
-  transition: opacity 200ms;
+}
+.flavor-slot-caption {
+  display: block;
+  height: 64px;
+}
+.flavor-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -24px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
   pointer-events: none;
 }
-.flavor-neighbor:hover .food-visual {
-  opacity: 1;
+.flavor-progress span {
+  width: 14px;
+  height: 4px;
+  border-radius: 4px;
+  background: #073d4624;
+  transition:
+    width 250ms,
+    background 250ms;
 }
-.flavor-neighbor-name {
-  display: block;
-  font-size: 18px;
-  line-height: 1.35;
-  margin-top: 6px;
-  text-wrap: balance;
-}
-.flavor-neighbor-price {
-  display: block;
-  font-size: 24px;
-  margin-top: 6px;
-}
-.flavor-neighbor-price small {
-  font-size: 13px;
+.flavor-progress span.is-active {
+  width: 28px;
+  background: var(--stage-amber);
 }
 .flavor-arrow {
   grid-row: 2;
@@ -561,16 +636,6 @@
 .menu-catalog .food-crop {
   overflow: hidden;
 }
-@keyframes flavor-enter {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 @media (max-width: 1250px) {
   .menu-showcase-categories {
     gap: 18px;
@@ -631,11 +696,16 @@
     height: 30px;
     margin: 0 auto 6px;
   }
+  .menu-showcase-stage {
+    --name-shrink: 1;
+    --neighbor-price-size: 21px;
+  }
   .flavor-carousel {
     grid-row: 3;
     grid-template-rows: auto;
   }
-  .flavor-feature {
+  .flavor-slide,
+  .flavor-halo {
     grid-row: 1;
     padding-top: 84px;
   }
@@ -644,14 +714,11 @@
     align-self: center;
     width: 100%;
   }
-  .menu-showcase .flavor-neighbor-visual {
+  .flavor-slot-art {
     height: 150px;
   }
-  .flavor-neighbor-name {
-    font-size: 15px;
-  }
-  .flavor-neighbor-price {
-    font-size: 21px;
+  .flavor-slot-caption {
+    height: 52px;
   }
   .flavor-arrow {
     grid-row: 1;
@@ -726,14 +793,14 @@
   .flavor-price-badge strong {
     font-size: 32px;
   }
-  .menu-showcase .flavor-neighbor-visual {
+  .menu-showcase-stage {
+    --neighbor-price-size: 19px;
+  }
+  .flavor-slot-art {
     height: 125px;
   }
-  .flavor-neighbor-name {
-    font-size: 13px;
-  }
-  .flavor-neighbor-price {
-    font-size: 19px;
+  .flavor-slot-caption {
+    height: 46px;
   }
   .flavor-arrow {
     width: 42px;
@@ -804,7 +871,8 @@
     min-height: 36px;
     font-size: 12px;
   }
-  .flavor-feature {
+  .flavor-slide,
+  .flavor-halo {
     grid-column: 1 / -1;
     padding-top: 72px;
   }
@@ -927,8 +995,49 @@
     font-size: 11px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .flavor-feature {
-    animation: none;
+/* Short desktop screens (most laptops): a tighter stage, so the whole
+   feature fits below the header while it is pinned. */
+@media (min-width: 1101px) and (max-height: 820px) {
+  .menu-showcase-inner {
+    padding-block: 14px 36px;
+  }
+  .menu-showcase-intro {
+    padding-top: 36px;
+  }
+  .flavor-meal-control {
+    margin-top: 16px;
+  }
+  .flavor-slide,
+  .flavor-halo {
+    padding-top: 74px;
+  }
+  .flavor-main-art {
+    height: 280px;
+  }
+  .flavor-backdrop {
+    width: 380px;
+    top: -37px;
+  }
+  .menu-showcase .flavor-main-visual {
+    height: 315px;
+  }
+  .flavor-price-badge {
+    width: 100px;
+    height: 100px;
+  }
+  .flavor-price-badge strong {
+    font-size: 35px;
+  }
+  .flavor-feature-copy h3 {
+    font-size: clamp(30px, 2.6vw, 42px);
+  }
+  .flavor-feature-copy p {
+    margin: 2px auto 14px;
+  }
+  .flavor-slot-art {
+    height: 170px;
+  }
+  .flavor-arrow {
+    margin-top: 59px;
   }
 }

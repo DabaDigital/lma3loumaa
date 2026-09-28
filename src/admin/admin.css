@@ -832,6 +832,43 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
+.admin-links-group {
+  padding: 0;
+  border: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  gap: 18px;
+}
+.admin-links-group legend {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 13px;
+  padding: 0;
+}
+.admin-link {
+  display: grid;
+  grid-template-columns: 43px minmax(0, 1fr) 43px;
+  gap: 14px;
+  align-items: start;
+}
+/* Both side boxes line up with the input, below the field label. */
+.admin-link-icon,
+.admin-link .admin-icon-button {
+  width: 43px;
+  height: 43px;
+  margin-top: 22px;
+}
+.admin-link-icon {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #edf0e7;
+  color: var(--teal);
+}
+.admin-links-error {
+  margin: 0 32px 20px;
+}
 .admin-form-actions {
   display: flex;
   justify-content: flex-end;
@@ -1311,6 +1348,16 @@
   }
   .admin-localized > div {
     grid-template-columns: 1fr;
+  }
+  .admin-link {
+    grid-template-columns: minmax(0, 1fr) 43px;
+    gap: 10px;
+  }
+  .admin-link-icon {
+    display: none;
+  }
+  .admin-links-error {
+    margin-inline: 20px;
   }
   .admin-form-grid {
     grid-template-columns: 1fr;

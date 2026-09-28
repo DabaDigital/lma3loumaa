@@ -1457,6 +1457,9 @@ select:focus-visible {
   width: 100%;
   font-size: 11px;
 }
+.delivery-action .button + .button {
+  margin-top: 10px;
+}
 .delivery-action p {
   font-size: 8px !important;
   text-align: center;
@@ -1484,6 +1487,37 @@ select:focus-visible {
 footer {
   color: var(--cream);
   background: var(--dark);
+}
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+  font-size: 10px;
+  color: #a5bcb5;
+}
+.footer-social > div {
+  display: flex;
+  gap: 8px;
+}
+.footer-social a {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #b7d2b53d;
+  color: var(--cream);
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s;
+}
+.footer-social a:hover,
+.footer-social a:focus-visible {
+  color: var(--dark);
+  background: var(--gold);
+  border-color: var(--gold);
 }
 .footer-links {
   display: flex;
@@ -1643,6 +1677,9 @@ footer {
 .order-modal > .small-note {
   margin-top: 15px;
   text-align: center;
+}
+.order-modal > .button + .button {
+  margin-top: 10px;
 }
 .product-modal {
   max-width: min(780px, calc(100vw - 32px));
@@ -2766,8 +2803,18 @@ footer {
   .footer-top > div:first-child {
     grid-column: 1/-1;
     display: flex;
+    flex-wrap: wrap;
     gap: 25px;
     align-items: center;
+  }
+  /* A zero basis keeps the blurb beside the logo; the social row wraps below. */
+  .footer-top > div:first-child > p {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .footer-social {
+    flex-basis: 100%;
+    margin-top: -8px;
   }
   .brand-footer {
     width: 130px;

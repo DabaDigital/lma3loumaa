@@ -62,7 +62,7 @@ In development, `vite.config.ts` mounts the same review handler as local middlew
 - The review form and CAPTCHA integration load on demand, not in the main bundle.
 
 **Admin dashboard**
-- Branded `/admin` with Supabase authentication and category, menu, location and review management in all three languages.
+- Branded `/admin` with Supabase authentication and category, menu, location and review management in all three languages, plus the Instagram, Facebook, Glovo and Klit links shown on the home page.
 - Admin access is granted only by inserting a row into `admin_users` from the trusted SQL Editor; there is no public sign-up or automatic enrollment. Revoking a row stops write access immediately through RLS.
 
 **Accessibility and performance**
@@ -118,7 +118,7 @@ Coverage spans menu filtering, price changes, variant selection, Glovo handoff l
 
 ## Deploy
 
-`vercel.json` configures the Vite build, immutable caching for `/assets/optimized/*`, and rewrites so `/admin/*` and `/components` resolve on direct navigation. On another static host, serve `index.html` for `/admin`, `/admin/items`, `/admin/categories`, `/admin/locations`, `/admin/reviews` and `/components`.
+`vercel.json` configures the Vite build, immutable caching for `/assets/optimized/*`, and rewrites so `/admin/*` and `/components` resolve on direct navigation. On another static host, serve `index.html` for `/admin`, `/admin/items`, `/admin/categories`, `/admin/locations`, `/admin/links`, `/admin/reviews` and `/components`.
 
 The review API must be deployed on Vercel — it depends on the `x-vercel-forwarded-for` header for the visitor identity and refuses to run otherwise.
 
