@@ -60,9 +60,6 @@ test("flavor showcase navigates dishes, meal prices and categories", async ({
   await page.goto("/");
   const carousel = page.getByRole("region", { name: "Découvrez nos saveurs" });
   const feature = carousel.locator(".flavor-feature");
-  const thumbnails = page.getByRole("group", {
-    name: "Choisissez votre saveur",
-  });
   const categories = page.locator(".menu-showcase-categories");
   await expect(page.getByRole("searchbox")).toHaveCount(0);
   await expect(feature.getByRole("heading")).toHaveText("Lma3louma");
@@ -78,16 +75,13 @@ test("flavor showcase navigates dishes, meal prices and categories", async ({
     .click();
   await expect(feature.getByRole("heading")).toHaveText("Lma3louma");
 
-  const cheddar = thumbnails.getByRole("button", {
-    name: /^Lma3louma Cheddar /,
-  });
-  await cheddar.click();
-  await expect(cheddar).toHaveAttribute("aria-pressed", "true");
+  await carousel
+    .getByRole("button", { name: "Saveur suivante", exact: true })
+    .click();
   await expect(feature.getByRole("heading")).toHaveText("Lma3louma Cheddar");
   await expect(feature.locator(".flavor-price-badge strong")).toHaveText("34");
   await carousel.getByRole("button", { name: "En menu", exact: true }).click();
   await expect(feature.locator(".flavor-price-badge strong")).toHaveText("51");
-  await expect(cheddar).toContainText("51");
   await feature.getByRole("button", { name: "Je la choisis" }).click();
   await expect(
     page.getByRole("dialog", { name: "Lma3louma Cheddar", exact: true }),

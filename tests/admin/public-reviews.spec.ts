@@ -169,6 +169,159 @@ async function fillReview(page: Page, title = "Un repas formidable") {
   await dialog.getByRole("radio", { name: "5 étoiles", exact: true }).check();
 }
 
+test("review summary includes all approved reviews and features the latest only once", async ({
+  page,
+}) => {
+  const approved = [5, 4, 4, 3, 5, 2, 1].map((rating, index) =>
+    review({
+      id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      title: `Avis publié ${index + 1}`,
+      rating,
+      created_at: `2026-09-${String(20 - index).padStart(2, "0")}T10:00:00Z`,
+    }),
+  );
+  const state = await backend(page, [
+    ...approved,
+    review({ id: "pending", title: "Avis en attente", status: "pending" }),
+    review({ id: "rejected", title: "Avis refusé", status: "rejected" }),
+  ]);
+  state.leakUnapproved = true;
+  await page.goto("/");
+  const section = page.locator("#reviews");
+  const score = section.locator(".reviews-summary-score strong");
+  await expect(score).toHaveText("3,4");
+  await expect(section.locator(".reviews-summary p")).toHaveText(
+    "7 avis partagés",
+  );
+  await expect(section.locator(".review-card")).toHaveCount(6);
+  await expect(section.locator(".review-card--featured")).toHaveCount(1);
+  await expect(
+    section.locator(".review-card--featured").getByRole("heading"),
+  ).toHaveText(approved[0].title);
+  await expect(
+    section.getByRole("heading", { name: approved[0].title, exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    section.getByRole("heading", { name: approved[6].title, exact: true }),
+  ).toHaveCount(0);
+  await expect(section).not.toContainText("Avis en attente");
+  await expect(section).not.toContainText("Avis refusé");
+
+  const more = section.getByRole("button", {
+    name: "Voir plus d’avis",
+    exact: true,
+  });
+  await more.click();
+  await expect(section.locator(".review-card")).toHaveCount(7);
+  await expect(
+    section.getByRole("heading", { name: approved[6].title, exact: true }),
+  ).toBeVisible();
+  await expect(section.locator(".review-card--featured")).toHaveCount(1);
+  await expect(score).toHaveText("3,4");
+  await expect(more).toHaveCount(0);
+});
+
+test("an empty review wall invites the first review without inventing a score", async ({
+  page,
+}) => {
+  await backend(page);
+  await page.goto("/");
+  const section = page.locator("#reviews");
+  await expect(
+    section.getByRole("heading", {
+      name: "Le premier avis sera peut-être le vôtre.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(section.locator(".reviews-summary")).toHaveCount(0);
+  await expect(section.locator(".review-card")).toHaveCount(0);
+  await expect(
+    section.getByRole("button", { name: "Donner mon avis", exact: true }),
+  ).toBeVisible();
+});
+
+test("review receipts fit French and Arabic screens and photos open on demand", async ({
+  page,
+}) => {
+  const state = await backend(page, [
+    review({
+      title: "Une très bonne adresse pour partager un repas en famille",
+      description: "Un accueil chaleureux et un shawarma délicieux. ".repeat(4),
+      image_path: "00000000-0000-4000-8000-000000000001/photo.png",
+    }),
+    review({
+      id: "second",
+      title: "Super".repeat(18),
+      description: "Très bon repas.",
+    }),
+    review({
+      id: "third",
+      title: "تجربة جميلة مع العائلة",
+      description: "شكراً على الاستقبال الجميل والطعام اللذيذ.",
+    }),
+  ]);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  const section = page.locator("#reviews");
+  await expect(section.locator(".review-card")).toHaveCount(3);
+  for (const locale of ["fr", "ar"]) {
+    if (locale === "ar") {
+      await page.getByRole("button", { name: "Langue", exact: true }).click();
+      await page.getByRole("menuitemradio", { name: "العربية" }).click();
+    }
+    await expect(page.locator("html")).toHaveAttribute(
+      "dir",
+      locale === "ar" ? "rtl" : "ltr",
+    );
+    for (const width of [1440, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      await expect(section.locator(".review-card--featured h3")).toBeVisible();
+      expect(
+        await section.evaluate(
+          (element) => element.scrollWidth <= element.clientWidth,
+        ),
+        `review section overflow: ${locale} at ${width}px`,
+      ).toBe(true);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+        `page overflow: ${locale} at ${width}px`,
+      ).toBe(true);
+    }
+  }
+  expect(state.downloads).toHaveLength(0);
+  const photoToggle = section.getByRole("button", {
+    name: "عرض الصورة",
+    exact: true,
+  });
+  await expect(photoToggle).toHaveAttribute("aria-expanded", "false");
+  const panelId = await photoToggle.getAttribute("aria-controls");
+  const panel = section.locator(`[id="${panelId}"]`);
+  await expect(panel).toBeHidden();
+  await photoToggle.press("Enter");
+  await expect(panel.locator('img[src^="blob:"]')).toBeVisible();
+  expect(
+    await section.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
+  const downloads = state.downloads.length;
+  const hide = section.getByRole("button", {
+    name: "إخفاء الصورة",
+    exact: true,
+  });
+  await expect(hide).toHaveAttribute("aria-expanded", "true");
+  await hide.press("Space");
+  await expect(panel).toBeHidden();
+  await photoToggle.press("Enter");
+  await expect(panel.locator('img[src^="blob:"]')).toBeVisible();
+  expect(state.downloads).toHaveLength(downloads);
+});
+
 test("review form loads on demand and stays dismissible while downloading", async ({
   page,
 }) => {

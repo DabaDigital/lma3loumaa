@@ -12,6 +12,15 @@ export const reviewCopy = {
     "لقمة وذكرى. شاركونا تجربتكم في المعلومة.",
   ),
   write: l("Donner mon avis", "Write a review", "أضف رأيك"),
+  latestNote: l("LE DERNIER MOT", "THE LATEST WORD", "آخر كلمة منكم"),
+  tableNote: l("UN MOT À TABLE", "A NOTE FROM THE TABLE", "كلمة من الطاولة"),
+  communityRating: l(
+    "La note de nos visiteurs",
+    "Our guests’ rating",
+    "تقييم زوارنا",
+  ),
+  sharedOne: l("avis partagé", "shared review", "رأي منشور"),
+  shared: l("avis partagés", "shared reviews", "آراء منشورة"),
   empty: l(
     "Le premier avis sera peut-être le vôtre.",
     "The first review could be yours.",

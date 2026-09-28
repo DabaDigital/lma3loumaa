@@ -10,7 +10,6 @@
   --stage-ink: var(--dark);
   --stage-soft: #4a6567;
   --stage-amber: #b97c12;
-  --stage-line: #073d4624;
   background: radial-gradient(ellipse at 50% 40%, #fffdf8 0, #f8f3e9 62%);
   color: var(--stage-ink);
   overflow: clip;
@@ -23,9 +22,9 @@
 .menu-showcase-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1fr);
-  grid-template-rows: auto auto auto auto;
+  grid-template-rows: auto auto auto;
   column-gap: 32px;
-  padding-block: 25px 16px;
+  padding-block: 25px 40px;
 }
 .menu-showcase-topbar {
   grid-column: 1 / -1;
@@ -410,75 +409,6 @@
   align-self: center;
   padding-block: 200px;
 }
-.flavor-selector {
-  grid-column: 1 / -1;
-  grid-row: 4;
-  display: flex;
-  gap: 12px;
-  padding: 26px 0 6px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #073d4640 transparent;
-}
-/* Centered while it fits; start-aligned (and fully scrollable) once it does
-   not, which justify-content: center cannot do. */
-.flavor-thumbnail:first-child {
-  margin-inline-start: auto;
-}
-.flavor-thumbnail:last-child {
-  margin-inline-end: auto;
-  border-inline-end: 0;
-}
-.flavor-thumbnail {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: transparent;
-  color: var(--stage-soft);
-  padding: 3px 14px;
-  border-inline-end: 1px solid var(--stage-line);
-  text-align: start;
-  flex: 0 0 auto;
-  max-width: 260px;
-}
-.flavor-thumbnail-art {
-  display: block;
-  width: 76px;
-  height: 76px;
-  flex: 0 0 76px;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  padding: 3px;
-  transition: border-color 180ms;
-}
-.flavor-thumbnail-art .food-visual {
-  width: 100%;
-  height: 100%;
-}
-.flavor-thumbnail:hover .flavor-thumbnail-art {
-  border-color: #f3ca7399;
-}
-.flavor-thumbnail.is-active .flavor-thumbnail-art {
-  border-color: var(--gold);
-  background: #f3ca7333;
-}
-.flavor-thumbnail:hover .flavor-thumbnail-copy,
-.flavor-thumbnail.is-active .flavor-thumbnail-copy {
-  color: var(--stage-ink);
-}
-.flavor-thumbnail-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 14px;
-  line-height: 1.35;
-}
-.flavor-thumbnail-copy strong {
-  font-size: 20px;
-}
-.flavor-thumbnail-copy small {
-  font-size: 11px;
-}
 .mezze-strip {
   background: #003e48;
   color: var(--cream);
@@ -537,6 +467,16 @@
 .mezze-strip-art .food-visual {
   height: 155px;
   width: 100%;
+}
+.mezze-cutout {
+  display: block;
+  aspect-ratio: 1.25;
+}
+.mezze-cutout img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
 }
 .mezze-bowl {
   display: block;
@@ -642,22 +582,6 @@
   .menu-showcase-catalog-trigger {
     font-size: 12px;
   }
-  .flavor-thumbnail {
-    padding-inline: 8px;
-    gap: 8px;
-  }
-  .flavor-thumbnail-art {
-    width: 64px;
-    height: 64px;
-    flex-basis: 64px;
-  }
-  .flavor-thumbnail-copy {
-    font-size: 13px;
-    max-width: 130px;
-  }
-  .flavor-thumbnail-copy strong {
-    font-size: 18px;
-  }
   .mezze-strip-inner {
     gap: 20px;
   }
@@ -742,10 +666,6 @@
   }
   .flavor-arrow--next {
     margin-inline-end: 0;
-  }
-  .flavor-selector {
-    padding-top: 18px;
-    gap: 6px;
   }
   .mezze-strip-inner {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -951,25 +871,6 @@
     min-width: 160px;
     min-height: 44px;
     font-size: 14px;
-  }
-  .flavor-selector {
-    padding: 18px 0 8px;
-    gap: 4px;
-  }
-  .flavor-thumbnail {
-    padding-inline: 6px;
-  }
-  .flavor-thumbnail-art {
-    width: 58px;
-    height: 58px;
-    flex-basis: 58px;
-  }
-  .flavor-thumbnail-copy {
-    max-width: 104px;
-    font-size: 12px;
-  }
-  .flavor-thumbnail-copy strong {
-    font-size: 17px;
   }
   /* Three columns are too narrow for a button on a phone: one row per dish. */
   .mezze-strip-inner {

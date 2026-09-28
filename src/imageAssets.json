@@ -160,5 +160,29 @@
     "srcSet": "/assets/optimized/shawarma-normal-384-843b9794bb30.webp 384w, /assets/optimized/shawarma-normal-768-1a307e5bc154.webp 768w, /assets/optimized/shawarma-normal-1280-9b21444b240c.webp 1280w",
     "width": 1536,
     "height": 1024
+  },
+  "/assets/menu/bowls/houmous-bowl.png": {
+    "src": "/assets/optimized/houmous-bowl-982-4c80f99bdff6.webp",
+    "srcSet": "/assets/optimized/houmous-bowl-384-6c32e600e319.webp 384w, /assets/optimized/houmous-bowl-768-6ef83e5eb7bb.webp 768w, /assets/optimized/houmous-bowl-982-4c80f99bdff6.webp 982w",
+    "width": 982,
+    "height": 830
+  },
+  "/assets/menu/bowls/baba-bowl.png": {
+    "src": "/assets/optimized/baba-bowl-946-782540b6f043.webp",
+    "srcSet": "/assets/optimized/baba-bowl-384-361c2ed69dfd.webp 384w, /assets/optimized/baba-bowl-768-1b2c99f6f91d.webp 768w, /assets/optimized/baba-bowl-946-782540b6f043.webp 946w",
+    "width": 946,
+    "height": 768
+  },
+  "/assets/menu/bowls/moutabal-bowl.png": {
+    "src": "/assets/optimized/moutabal-bowl-936-52da7c487cd4.webp",
+    "srcSet": "/assets/optimized/moutabal-bowl-384-45727aa54424.webp 384w, /assets/optimized/moutabal-bowl-768-92185afe7f11.webp 768w, /assets/optimized/moutabal-bowl-936-52da7c487cd4.webp 936w",
+    "width": 936,
+    "height": 760
+  },
+  "/assets/menu/bowls/muhammara-bowl.png": {
+    "src": "/assets/optimized/muhammara-bowl-950-b729bbcbd1f0.webp",
+    "srcSet": "/assets/optimized/muhammara-bowl-384-1d841235a42d.webp 384w, /assets/optimized/muhammara-bowl-768-64970f07f2e8.webp 768w, /assets/optimized/muhammara-bowl-950-b729bbcbd1f0.webp 950w",
+    "width": 950,
+    "height": 760
   }
 }

@@ -1,4 +1,5 @@
 import { LoadingImage } from "./LoadingImage";
+import { ShawarmaScene } from "./ShawarmaScene";
 import { MenuShowcase } from "./MenuShowcase";
 import { MenuPage } from "./MenuPage";
 import { useLocation } from "./router";
@@ -260,15 +261,12 @@ export default function App() {
                   </h1>
                 </div>
                 <div className="hero-art">
-                  <span className="hero-ring ring-one" />
-                  <span className="hero-ring ring-two" />
                   <span className="hero-arabic" lang="ar" dir="rtl">
                     مكتنساااش
                   </span>
-                  <div className="hero-disc" />
-                  <FoodVisual
-                    kind="classic"
-                    className="hero-food"
+                  <ShawarmaScene
+                    locale={locale}
+                    motion={motion}
                     label={items[0]?.name[locale] || "Shawarma"}
                   />
                   <div className="hero-sticker">
@@ -292,7 +290,6 @@ export default function App() {
                       <path d="M4 4C22 34 40 27 64 9m-17 0 17 0-3 17" />
                     </svg>
                   </div>
-                  <span className="art-caption">LMA3LOUMA ORIGINAL · CASA</span>
                 </div>
                 <div className="hero-text">
                   <p className="hero-subtitle">{t("heroSub")}</p>

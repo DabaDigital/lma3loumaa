@@ -1,0 +1,542 @@
+/* The product lives in a perspective scene; the price and brand badges stay steady. */
+.shawarma-scene {
+  position: absolute;
+  inset: 0;
+  perspective: 1000px;
+  isolation: isolate;
+  --scene-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+}
+.shawarma-depth {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 650ms var(--scene-ease);
+  animation: shawarma-arrive 1250ms var(--scene-ease) both;
+}
+.shawarma-spotlight {
+  position: absolute;
+  inset: -15%;
+  background: radial-gradient(ellipse, #8ed6ba18 0%, transparent 65%);
+  pointer-events: none;
+}
+.shawarma-halo {
+  position: absolute;
+  width: 75%;
+  aspect-ratio: 1;
+  left: 12.5%;
+  top: 7%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 20%, #ffe4a3, #edc576 56%, #af803c);
+  box-shadow:
+    inset -15px -18px 35px #633e3826,
+    0 0 70px #e8c8760e;
+  transform: translateZ(-65px) rotate(-12deg);
+  transition:
+    transform 1100ms var(--scene-ease),
+    opacity 900ms;
+}
+.shawarma-halo::before,
+.shawarma-halo::after {
+  content: "";
+  position: absolute;
+  inset: -9%;
+  border: 1px solid #f4d0841d;
+  border-radius: 50%;
+}
+.shawarma-halo::after {
+  inset: -18%;
+  border-color: #f4d0840c;
+}
+.shawarma-halo span {
+  position: absolute;
+  inset: 4%;
+  border: 1px dashed #86623450;
+  border-radius: 50%;
+}
+.shawarma-orbit {
+  position: absolute;
+  width: 102%;
+  height: 73%;
+  top: 15%;
+  left: -1%;
+  border: 1px solid #f6d4815e;
+  border-radius: 50%;
+  pointer-events: none;
+  transform-style: preserve-3d;
+}
+.shawarma-orbit--back {
+  transform: translateZ(-35px) rotateZ(-25deg) rotateX(65deg);
+  animation: shawarma-orbit-back 14s ease-in-out infinite;
+}
+.shawarma-orbit--front {
+  border-color: transparent transparent #f9d58675 #f9d58625;
+  transform: translateZ(70px) rotateZ(-25deg) rotateX(65deg);
+  animation: shawarma-orbit-front 14s ease-in-out infinite;
+}
+.shawarma-orbit i {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  top: 17%;
+  left: 11%;
+  border-radius: 50%;
+  background: #f5d185;
+  box-shadow: 0 0 16px #f5d18580;
+}
+.shawarma-orbit--front i {
+  left: auto;
+  top: auto;
+  right: 9%;
+  bottom: 18%;
+  width: 5px;
+  height: 5px;
+}
+.shawarma-floor {
+  position: absolute;
+  width: 60%;
+  height: 10%;
+  left: 20%;
+  bottom: 13%;
+  background: radial-gradient(ellipse, #001d2580, transparent 68%);
+  transform: translateZ(-30px);
+  animation: shawarma-shadow 6s ease-in-out infinite;
+}
+.shawarma-scene .hero-food {
+  inset: 12% -2% auto;
+  width: 104%;
+  height: 73%;
+  animation: shawarma-float 6s ease-in-out infinite;
+  transition:
+    opacity 450ms ease,
+    scale 950ms var(--scene-ease);
+  scale: 1;
+}
+.shawarma-layers {
+  position: absolute;
+  height: 98%;
+  aspect-ratio: 2 / 3;
+  left: 50%;
+  top: -4%;
+  transform: translateX(-50%);
+  transform-style: preserve-3d;
+  opacity: 0;
+  transition: opacity 350ms ease;
+  pointer-events: none;
+}
+.shawarma-layer {
+  position: absolute;
+  inset: 0;
+  transition: transform 1150ms var(--scene-ease);
+}
+.shawarma-layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.shawarma-layer--bread {
+  clip-path: inset(0 0 70%);
+  transform: translate3d(0, 23%, 20px) rotate(-6deg);
+}
+.shawarma-layer--chicken {
+  clip-path: inset(30% 0 42.5%);
+  transform: translate3d(0, 6%, 40px);
+}
+.shawarma-layer--greens {
+  clip-path: inset(57.5% 0 23.5%);
+  transform: translate3d(0, -10%, 55px) rotate(5deg);
+}
+.shawarma-layer--sauce {
+  clip-path: inset(76.5% 0 0);
+  transform: translate3d(0, -23%, 15px);
+}
+.shawarma-scene[data-expanded="true"] .hero-food {
+  opacity: 0;
+  scale: 0.82;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-halo {
+  transform: translateZ(-90px) rotateY(-22deg) scale(0.82);
+  opacity: 0.24;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layers {
+  opacity: 1;
+  transition-delay: 80ms;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer {
+  animation: shawarma-ingredient-float 5s ease-in-out infinite;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--chicken {
+  animation-delay: -1.4s;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--greens {
+  animation-delay: -2.6s;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--sauce {
+  animation-delay: -3.8s;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--bread {
+  transform: translate3d(-3%, -1%, 35px) rotate(-5deg);
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--chicken {
+  transform: translate3d(3%, 0, 60px) rotate(4deg);
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--greens {
+  transform: translate3d(-3%, 1%, 75px) rotate(-4deg);
+}
+.shawarma-scene[data-expanded="true"] .shawarma-layer--sauce {
+  transform: translate3d(2%, 2%, 25px) rotate(3deg);
+}
+.shawarma-spices {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(85px);
+  pointer-events: none;
+}
+.shawarma-spices i {
+  position: absolute;
+  width: 4px;
+  height: 9px;
+  background: #f6d791;
+  border-radius: 80% 20% 75% 25%;
+  opacity: 0.75;
+  animation: shawarma-spice 7s ease-in-out infinite;
+}
+.shawarma-spices i:nth-child(1) {
+  left: 14%;
+  top: 29%;
+  transform: rotate(24deg);
+}
+.shawarma-spices i:nth-child(2) {
+  left: 78%;
+  top: 16%;
+  animation-delay: -2s;
+}
+.shawarma-spices i:nth-child(3) {
+  left: 86%;
+  top: 40%;
+  animation-delay: -3s;
+  width: 3px;
+  height: 5px;
+}
+.shawarma-spices i:nth-child(4) {
+  left: 16%;
+  top: 70%;
+  animation-delay: -1s;
+}
+.shawarma-spices i:nth-child(5) {
+  left: 71%;
+  top: 79%;
+  animation-delay: -4s;
+}
+.shawarma-spices i:nth-child(6) {
+  left: 32%;
+  top: 12%;
+  animation-delay: -2.5s;
+  width: 3px;
+  height: 5px;
+}
+.shawarma-spices i:nth-child(7) {
+  left: 6%;
+  top: 48%;
+  animation-delay: -5s;
+}
+.shawarma-spices i:nth-child(8) {
+  left: 89%;
+  top: 64%;
+  animation-delay: -3.5s;
+  width: 3px;
+  height: 5px;
+}
+.shawarma-annotations {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.shawarma-annotation {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  max-width: 24%;
+  color: #fff0c9;
+  font-size: 11px;
+  font-weight: 650;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 350ms,
+    transform 600ms var(--scene-ease);
+}
+.shawarma-annotation small {
+  font: 8px monospace;
+  opacity: 0.6;
+}
+.shawarma-annotation::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 1px;
+  background: #eacc8070;
+  top: calc(100% + 7px);
+}
+.shawarma-annotation--bread {
+  left: 7%;
+  top: 21%;
+}
+.shawarma-annotation--chicken {
+  right: 2%;
+  top: 42%;
+}
+.shawarma-annotation--greens {
+  left: 2%;
+  top: 62%;
+}
+.shawarma-annotation--sauce {
+  right: 6%;
+  top: 78%;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-annotation {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 550ms;
+}
+.shawarma-controls {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+  width: max-content;
+  max-width: 100%;
+  padding-bottom: 22px;
+}
+.shawarma-reveal-toggle {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #f7d28a70;
+  border-radius: 100px;
+  background: #073e46e8;
+  color: #f7d58d;
+  padding: 11px 17px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  min-height: 42px;
+  transition:
+    background 180ms,
+    box-shadow 180ms;
+}
+.shawarma-reveal-toggle:hover {
+  background: #145963;
+  box-shadow: 0 0 25px #f3ce7d15;
+}
+.shawarma-reveal-toggle:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+.shawarma-motion-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #f7d28a35;
+  border-radius: 50%;
+  background: #073e46b0;
+  color: #edce8d;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.shawarma-reveal-toggle:focus-visible,
+.shawarma-motion-toggle:focus-visible {
+  outline: 2px solid #fff4d6;
+  outline-offset: 4px;
+}
+.shawarma-scene-caption {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 7px;
+  letter-spacing: 1.8px;
+  color: #a4c2bd;
+}
+.shawarma-controls[dir="rtl"] .shawarma-scene-caption {
+  letter-spacing: 1px;
+}
+.shawarma-scene[data-expanded="true"] .shawarma-scene-caption {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+.hero-art:has(.shawarma-scene) {
+  margin-bottom: 30px;
+}
+.hero-art:has(.shawarma-scene[data-expanded="true"]) .hero-sticker {
+  opacity: 0;
+  pointer-events: none;
+}
+.hero-art:has(.shawarma-scene) .hero-sticker {
+  transition: opacity 350ms;
+}
+.hero-art:has(.shawarma-scene) .hero-arabic {
+  pointer-events: none;
+  transition: opacity 350ms;
+}
+.hero-art:has(.shawarma-scene[data-expanded="true"]) .hero-arabic {
+  opacity: 0;
+}
+.shawarma-scene[data-still="true"] .shawarma-depth {
+  transform: rotateX(0deg) rotateY(0deg);
+  animation: none;
+}
+.shawarma-scene[data-still="true"] *,
+.hero[data-animation-paused="true"] .shawarma-scene * {
+  animation-play-state: paused !important;
+}
+.shawarma-scene[data-still="true"] * {
+  transition-duration: 0s !important;
+}
+@keyframes shawarma-float {
+  0%,
+  100% {
+    transform: translate3d(0, 3px, 45px) rotate(-2deg);
+  }
+  50% {
+    transform: translate3d(0, -12px, 65px) rotate(1deg);
+  }
+}
+@keyframes shawarma-arrive {
+  from {
+    opacity: 0;
+    scale: 0.8;
+    translate: 0 24px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+@keyframes shawarma-ingredient-float {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+@keyframes shawarma-orbit-back {
+  0%,
+  100% {
+    transform: translateZ(-35px) rotateZ(-25deg) rotateX(65deg);
+  }
+  50% {
+    transform: translateZ(-35px) rotateZ(-10deg) rotateX(72deg);
+  }
+}
+@keyframes shawarma-orbit-front {
+  0%,
+  100% {
+    transform: translateZ(70px) rotateZ(-25deg) rotateX(65deg);
+  }
+  50% {
+    transform: translateZ(70px) rotateZ(-10deg) rotateX(72deg);
+  }
+}
+@keyframes shawarma-shadow {
+  0%,
+  100% {
+    scale: 1;
+    opacity: 0.8;
+  }
+  50% {
+    scale: 0.84;
+    opacity: 0.5;
+  }
+}
+@keyframes shawarma-spice {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: -15deg;
+  }
+  50% {
+    translate: 4px -14px;
+    rotate: 35deg;
+  }
+}
+@media (max-width: 650px) {
+  .hero-art:has(.shawarma-scene) {
+    margin-top: 18px;
+    margin-bottom: 44px;
+  }
+  .shawarma-halo {
+    width: 76%;
+    left: 12%;
+    top: 7%;
+  }
+  .shawarma-scene .hero-food {
+    inset: 12% -2% auto;
+    width: 104%;
+    height: 75%;
+  }
+  .shawarma-layers {
+    height: 94%;
+    top: 0;
+  }
+  .shawarma-orbit {
+    width: 98%;
+    left: 1%;
+  }
+  .shawarma-controls {
+    bottom: -40px;
+  }
+  .shawarma-annotation {
+    font-size: 9px;
+    gap: 4px;
+    max-width: 23%;
+  }
+  .shawarma-annotation--bread {
+    left: 2%;
+  }
+  .shawarma-annotation--chicken {
+    right: 0;
+  }
+  .shawarma-annotation--greens {
+    left: 0;
+  }
+  .shawarma-annotation--sauce {
+    right: 0;
+  }
+  .shawarma-annotation small {
+    font-size: 7px;
+  }
+  .shawarma-motion-toggle {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .shawarma-reveal-toggle {
+    min-height: 44px;
+    padding-inline: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shawarma-scene .shawarma-depth {
+    transform: none;
+  }
+  .shawarma-scene *,
+  .shawarma-scene *::before,
+  .shawarma-scene *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

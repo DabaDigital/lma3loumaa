@@ -6,6 +6,8 @@ import {
   RefreshCw,
   ImageIcon,
   ChevronDown,
+  Quote,
+  ArrowUpRight,
 } from "lucide-react";
 import { Button, Modal } from "./components";
 import type { Locale } from "./data";
@@ -20,19 +22,30 @@ function ReviewCard({
   review,
   locale,
   t,
+  index,
 }: {
   review: Review;
   locale: Locale;
   t: (key: keyof typeof reviewCopy) => string;
+  index: number;
 }) {
   const [photoOpen, setPhotoOpen] = useState(false);
   // Download the photo on first open, then keep it so closing can animate.
   const [photoRequested, setPhotoRequested] = useState(false);
   const photoId = useId();
   return (
-    <article className={`review-card${photoOpen ? " is-photo-open" : ""}`}>
+    <article
+      className={`review-card${index === 0 ? " review-card--featured" : ""}${photoOpen ? " is-photo-open" : ""}`}
+    >
       <div className="review-card-body">
+        <div className="review-note-header">
+          <span>{t(index === 0 ? "latestNote" : "tableNote")}</span>
+          <span className="review-note-number" aria-hidden="true">
+            {String(index + 1).padStart(2, "0")}
+          </span>
+        </div>
         <div className="review-card-copy">
+          <Quote className="review-quote-mark" aria-hidden="true" />
           <div className="review-card-meta">
             <span
               className="review-display-stars"
@@ -47,14 +60,19 @@ function ReviewCard({
                 />
               ))}
             </span>
-            <time dateTime={review.created_at}>
-              {new Intl.DateTimeFormat(locale, {
-                dateStyle: "medium",
-              }).format(new Date(review.created_at))}
-            </time>
           </div>
           <h3 dir="auto">{review.title}</h3>
           {review.description && <p dir="auto">{review.description}</p>}
+        </div>
+        <div className="review-note-footer">
+          <span className="review-note-brand" dir="ltr">
+            LMA3LOUMA · CASA
+          </span>
+          <time dateTime={review.created_at}>
+            {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
+              new Date(review.created_at),
+            )}
+          </time>
         </div>
         {review.image_path && (
           <button
@@ -101,68 +119,95 @@ export function Reviews() {
   const { reviews, loading, error, refresh } = useReviewList();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(6);
+  const average = reviews.length
+    ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
+    : null;
   return (
     <section
       className="reviews-section section"
       id="reviews"
       aria-labelledby="reviews-title"
     >
-      <div className="container">
+      <div className="container reviews-layout">
         <div className="reviews-heading">
           <div>
             <p className="eyebrow">{t("eyebrow")}</p>
             <h2 id="reviews-title">{t("title")}</h2>
             <p>{t("intro")}</p>
           </div>
+          {!loading && !error && average !== null && (
+            <div className="reviews-summary" aria-label={t("communityRating")}>
+              <div className="reviews-summary-score">
+                <Star size={24} fill="currentColor" aria-hidden="true" />
+                <strong dir="ltr">
+                  {new Intl.NumberFormat(locale, {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  }).format(average)}
+                </strong>
+                <span dir="ltr">/ 5</span>
+              </div>
+              <p>
+                <strong>{reviews.length}</strong>{" "}
+                {t(reviews.length === 1 ? "sharedOne" : "shared")}
+              </p>
+            </div>
+          )}
           <Button onClick={() => setOpen(true)}>
             <MessageSquare size={17} />
             {t("write")}
+            <ArrowUpRight size={17} aria-hidden="true" />
           </Button>
         </div>
-        {loading ? (
-          <ContentSkeleton kind="reviews" />
-        ) : error ? (
-          <div className="review-empty">
-            <p role="alert">{t("loadError")}</p>
-            <Button variant="secondary" onClick={() => void refresh()}>
-              <RefreshCw size={16} />
-              {t("retry")}
-            </Button>
-          </div>
-        ) : !reviews.length ? (
-          <div className="review-empty">
-            <div className="review-empty-stars" aria-hidden="true">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star key={n} size={21} />
-              ))}
+        <div className="reviews-wall">
+          {loading ? (
+            <ContentSkeleton kind="reviews" />
+          ) : error ? (
+            <div className="review-empty">
+              <p role="alert">{t("loadError")}</p>
+              <Button variant="secondary" onClick={() => void refresh()}>
+                <RefreshCw size={16} />
+                {t("retry")}
+              </Button>
             </div>
-            <h3>{t("empty")}</h3>
-            <p>{t("emptySub")}</p>
-          </div>
-        ) : (
-          <>
-            <div className="reviews-grid">
-              {reviews.slice(0, visible).map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  locale={locale}
-                  t={t}
-                />
-              ))}
-            </div>
-            {visible < reviews.length && (
-              <div className="review-more">
-                <Button
-                  variant="secondary"
-                  onClick={() => setVisible((n) => n + 6)}
-                >
-                  {t("more")}
-                </Button>
+          ) : !reviews.length ? (
+            <div className="review-empty">
+              <div className="review-empty-stars" aria-hidden="true">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star key={n} size={21} />
+                ))}
               </div>
-            )}
-          </>
-        )}
+              <h3>{t("empty")}</h3>
+              <p>{t("emptySub")}</p>
+            </div>
+          ) : (
+            <>
+              <div
+                className={`reviews-grid${reviews.length === 1 ? " reviews-grid--single" : ""}`}
+              >
+                {reviews.slice(0, visible).map((review, index) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    locale={locale}
+                    t={t}
+                    index={index}
+                  />
+                ))}
+              </div>
+              {visible < reviews.length && (
+                <div className="review-more">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setVisible((n) => n + 6)}
+                  >
+                    {t("more")}
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
       {open && (
         <Suspense

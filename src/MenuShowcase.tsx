@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
@@ -31,7 +31,6 @@ const copy = {
     more: "المزيد",
     previous: "الشاورما السابقة",
     next: "الشاورما التالية",
-    flavors: "اختار الشاورما",
     carousel: "استكشف النكهات",
     carouselRole: "عرض النكهات",
     mezze: "كمّلها بالمقبلات",
@@ -45,7 +44,6 @@ const copy = {
     more: "Plus",
     previous: "Saveur précédente",
     next: "Saveur suivante",
-    flavors: "Choisissez votre saveur",
     carousel: "Découvrez nos saveurs",
     carouselRole: "carrousel",
     mezze: "Et un petit mezzé ?",
@@ -59,7 +57,6 @@ const copy = {
     more: "More",
     previous: "Previous flavor",
     next: "Next flavor",
-    flavors: "Choose your flavor",
     carousel: "Explore our flavors",
     carouselRole: "carousel",
     mezze: "Make room for mezze",
@@ -85,13 +82,38 @@ function Rays({ className }: { className: string }) {
   );
 }
 
+/** The bowls of the restaurant's mezze shots, cut out by
+ * scripts/mezze-bowls.mjs: [file, width, height] by dish. */
+const mezzeBowls: Record<string, [string, number, number]> = {
+  houmous: ["/assets/menu/bowls/houmous-bowl.png", 982, 830],
+  baba: ["/assets/menu/bowls/baba-bowl.png", 946, 768],
+  moutabal: ["/assets/menu/bowls/moutabal-bowl.png", 936, 760],
+  muhammara: ["/assets/menu/bowls/muhammara-bowl.png", 950, 760],
+};
+
 /** The restaurant's mezze shots carry a logo above the bowl and a name label
- * below it; the strip already prints the name, so frame just the bowl. */
+ * over its base; the strip already prints the name, so show just the bowl. */
 function MezzeVisual({ item }: { item: Item }) {
+  const bowl = mezzeBowls[item.id];
+  if (bowl)
+    return (
+      <span className="mezze-cutout">
+        <LoadingImage
+          src={bowl[0]}
+          alt=""
+          width={bowl[1]}
+          height={bowl[2]}
+          sizes="(max-width: 600px) 46vw, 260px"
+          loading="lazy"
+          draggable={false}
+        />
+      </span>
+    );
   if (!item.image.startsWith("https://") && !item.image.startsWith("/assets/"))
     return (
       <FoodVisual kind={item.image} sizes="(max-width: 700px) 36vw, 210px" />
     );
+  // Any other shot in that layout: crop to the bowl.
   return (
     <span className="mezze-bowl">
       <LoadingImage
@@ -151,7 +173,6 @@ export function MenuShowcase({
   const rtl = locale === "ar";
   const [activeId, setActiveId] = useState("classic");
   const moreRef = useRef<HTMLDetailsElement>(null);
-  const selectorRef = useRef<HTMLDivElement>(null);
   const swipeStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressClickUntil = useRef(0);
   const stageCategory =
@@ -196,22 +217,6 @@ export function MenuShowcase({
   const mezzeItems = items
     .filter((item) => item.category === "mezze")
     .slice(0, 3);
-
-  // On narrow screens the flavor row scrolls; keep the chosen one in view
-  // without moving the page.
-  useEffect(() => {
-    const list = selectorRef.current;
-    const thumb = list?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (!list || !thumb || list.scrollWidth <= list.clientWidth) return;
-    const listBox = list.getBoundingClientRect();
-    const thumbBox = thumb.getBoundingClientRect();
-    list.scrollBy({
-      left:
-        thumbBox.left + thumbBox.width / 2 - (listBox.left + listBox.width / 2),
-      behavior:
-        document.documentElement.dataset.motion === "off" ? "auto" : "smooth",
-    });
-  }, [active?.id]);
 
   const changeCategory = (categoryId: string) => {
     onCategoryChange(categoryId);
@@ -472,33 +477,6 @@ export function MenuShowcase({
               {active &&
                 `${active.name[locale]}, ${price(active)} ${t("currency")}, ${activeIndex + 1} / ${stageItems.length}`}
             </p>
-          </div>
-
-          <div
-            className="flavor-selector"
-            ref={selectorRef}
-            role="group"
-            aria-label={text.flavors}
-          >
-            {stageItems.map((item) => (
-              <button
-                type="button"
-                className={`flavor-thumbnail ${item.id === active?.id ? "is-active" : ""}`}
-                key={item.id}
-                aria-pressed={item.id === active?.id}
-                onClick={() => setActiveId(item.id)}
-              >
-                <span className="flavor-thumbnail-art">
-                  <ShowcaseVisual item={item} sizes="90px" />
-                </span>
-                <span className="flavor-thumbnail-copy">
-                  <span>{item.name[locale]}</span>
-                  <strong>
-                    {price(item)} <small>{t("currency")}</small>
-                  </strong>
-                </span>
-              </button>
-            ))}
           </div>
         </div>
       </div>
