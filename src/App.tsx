@@ -242,87 +242,91 @@ export default function App() {
           />
         ) : (
           <>
-            <section className="hero">
-              <div className="hero-grain" />
-              <div className="container hero-grid">
-                <div className="hero-copy">
-                  <p className="eyebrow">
-                    <span className="little-star">✦</span>
-                    <span lang={locale === "en" ? "en" : "ar"} dir="auto">
-                      {t("eyebrow")}
-                    </span>
-                  </p>
-                  <h1>
-                    {t("hero1")}
-                    <br />
-                    {t("hero2")}
-                    <br />
-                    <span>{t("hero3")}</span>
-                  </h1>
+            <div className="hero-story">
+              <section className="hero">
+                <div className="hero-grain" />
+                <div className="container hero-grid">
+                  <div className="hero-copy">
+                    <p className="eyebrow">
+                      <span className="little-star">✦</span>
+                      <span lang={locale === "en" ? "en" : "ar"} dir="auto">
+                        {t("eyebrow")}
+                      </span>
+                    </p>
+                    <h1>
+                      {t("hero1")}
+                      <br />
+                      {t("hero2")}
+                      <br />
+                      <span>{t("hero3")}</span>
+                    </h1>
+                  </div>
+                  <div className="hero-art-track">
+                    <div className="hero-art">
+                      <span className="hero-arabic" lang="ar" dir="rtl">
+                        مكتنساااش
+                      </span>
+                      <ShawarmaScene
+                        locale={locale}
+                        motion={motion}
+                        label={items[0]?.name[locale] || "Shawarma"}
+                      />
+                      <div className="hero-sticker">
+                        <span>{t("heroSticker")}</span>
+                        <Heart size={24} />
+                        <span>{t("heroSticker2")}</span>
+                      </div>
+                      <div className="price-note">
+                        <span>{t("from")}</span>
+                        <strong>
+                          {content.loading ? (
+                            <Skeleton className="skeleton-number" />
+                          ) : (
+                            (items.find((i) => i.id === "classic")?.price ??
+                            items[0]?.price ??
+                            "—")
+                          )}
+                          <small>{t("currency")}</small>
+                        </strong>
+                        <svg viewBox="0 0 70 35" aria-hidden="true">
+                          <path d="M4 4C22 34 40 27 64 9m-17 0 17 0-3 17" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hero-text">
+                    <p className="hero-subtitle">{t("heroSub")}</p>
+                    <p className="hero-description">{t("heroDesc")}</p>
+                  </div>
+                  <div className="hero-actions">
+                    <div className="hero-buttons">
+                      <a href="/#menu" className="button button--primary">
+                        {t("discover")}
+                        <ArrowDown size={18} />
+                      </a>
+                      <a href="/#locations" className="hero-location">
+                        <MapPin size={18} />
+                        {t("findUs")}
+                      </a>
+                    </div>
+                    <p className="hero-note">
+                      <ShoppingBag size={14} />
+                      {t("heroNote")}
+                    </p>
+                  </div>
                 </div>
-                <div className="hero-art">
-                  <span className="hero-arabic" lang="ar" dir="rtl">
-                    مكتنساااش
+                <div className="hero-bottom container">
+                  <span>01 / 04</span>
+                  <a href="/#menu">
+                    {t("scroll")}
+                    <ArrowDown size={14} />
+                  </a>
+                  <span lang="ar" dir="rtl">
+                    شاورما هي لمعلومة
                   </span>
-                  <ShawarmaScene
-                    locale={locale}
-                    motion={motion}
-                    label={items[0]?.name[locale] || "Shawarma"}
-                  />
-                  <div className="hero-sticker">
-                    <span>{t("heroSticker")}</span>
-                    <Heart size={24} />
-                    <span>{t("heroSticker2")}</span>
-                  </div>
-                  <div className="price-note">
-                    <span>{t("from")}</span>
-                    <strong>
-                      {content.loading ? (
-                        <Skeleton className="skeleton-number" />
-                      ) : (
-                        (items.find((i) => i.id === "classic")?.price ??
-                        items[0]?.price ??
-                        "—")
-                      )}
-                      <small>{t("currency")}</small>
-                    </strong>
-                    <svg viewBox="0 0 70 35" aria-hidden="true">
-                      <path d="M4 4C22 34 40 27 64 9m-17 0 17 0-3 17" />
-                    </svg>
-                  </div>
                 </div>
-                <div className="hero-text">
-                  <p className="hero-subtitle">{t("heroSub")}</p>
-                  <p className="hero-description">{t("heroDesc")}</p>
-                </div>
-                <div className="hero-actions">
-                  <div className="hero-buttons">
-                    <a href="/#menu" className="button button--primary">
-                      {t("discover")}
-                      <ArrowDown size={18} />
-                    </a>
-                    <a href="/#locations" className="hero-location">
-                      <MapPin size={18} />
-                      {t("findUs")}
-                    </a>
-                  </div>
-                  <p className="hero-note">
-                    <ShoppingBag size={14} />
-                    {t("heroNote")}
-                  </p>
-                </div>
-              </div>
-              <div className="hero-bottom container">
-                <span>01 / 04</span>
-                <a href="/#menu">
-                  {t("scroll")}
-                  <ArrowDown size={14} />
-                </a>
-                <span lang="ar" dir="rtl">
-                  شاورما هي لمعلومة
-                </span>
-              </div>
-            </section>
+              </section>
+            </div>
             <div className="ticker" aria-hidden="true">
               <div>
                 {[0, 1, 2, 3].map((n) => (

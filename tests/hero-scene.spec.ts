@@ -1,305 +1,172 @@
 import { test, expect } from "@playwright/test";
-import type { Locator, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
-async function openScene(page: Page) {
+async function story(page: Page) {
   await page.goto("/");
-  const scene = page.locator(".shawarma-scene");
-  await expect(scene).toHaveAttribute("data-ready", "true");
-  await scene.scrollIntoViewIfNeeded();
-  return scene;
-}
-
-async function settleScene(scene: Locator) {
-  await scene.evaluate(async (element) => {
-    // Let React's new state generate transitions before waiting for them.
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    );
-    await Promise.allSettled(
-      element
-        .getAnimations({ subtree: true })
-        .filter(
-          (animation) =>
-            animation.playState === "running" &&
-            Number.isFinite(animation.effect?.getComputedTiming().endTime),
-        )
-        .map((animation) => animation.finished),
-    );
+  await expect(page.locator(".hero-story")).toHaveAttribute(
+    "data-scroll-enabled",
+    "true",
+  );
+  await expect(page.locator(".shawarma-scene")).toHaveAttribute(
+    "data-ready",
+    "true",
+  );
+  await page.evaluate(() => document.fonts.ready);
+  return page.locator(".hero-story").evaluate((element) => {
+    const mobile = (element as HTMLElement).dataset.scrollLayout === "mobile";
+    const anchor = mobile ? element.querySelector(".hero-art-track")! : element;
+    const style = getComputedStyle(element);
+    return {
+      start:
+        scrollY +
+        anchor.getBoundingClientRect().top -
+        parseFloat(style.getPropertyValue("--story-pin-top")),
+      travel: parseFloat(style.getPropertyValue("--hero-travel")),
+    };
   });
 }
 
-async function pointAtScene(page: Page, scene: Locator) {
-  const box = await scene.boundingBox();
-  expect(box).not.toBeNull();
-  await page.mouse.move(box!.x + box!.width * 0.78, box!.y + box!.height * 0.3);
-}
-
-async function nextFrames(scene: Locator) {
-  await scene.evaluate(
-    () =>
-      new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      ),
+async function scrollTo(page: Page, y: number, progress: number) {
+  await page.evaluate(
+    (top) => window.scrollTo({ top, behavior: "instant" }),
+    y,
   );
+  await expect
+    .poll(async () =>
+      Math.abs(
+        Number(
+          await page.locator(".shawarma-scene").getAttribute("data-progress"),
+        ) - progress,
+      ),
+    )
+    .toBeLessThan(0.012);
 }
 
-test("shawarma reveal works with a mouse and both keyboard activation keys", async ({
+test("desktop pins the hero, scrubs in both directions, then releases the page", async ({
   page,
 }) => {
-  const scene = await openScene(page);
-  const toggle = page.locator(".shawarma-reveal-toggle");
-  await expect(toggle).toHaveAccessibleName(/\S/);
-  await expect(toggle).toHaveAttribute("aria-controls", "shawarma-layers");
-  await expect(page.locator("#shawarma-layers .shawarma-layer")).toHaveCount(4);
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(scene).toHaveAttribute("data-expanded", "false");
-
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await expect(scene).toHaveAttribute("data-expanded", "true");
-
-  await toggle.press("Enter");
-  await expect(toggle).toHaveAttribute("aria-expanded", "false");
-  await expect(scene).toHaveAttribute("data-expanded", "false");
-  await expect(toggle).toBeFocused();
-
-  await toggle.press("Space");
-  await expect(toggle).toHaveAttribute("aria-expanded", "true");
-  await expect(scene).toHaveAttribute("data-expanded", "true");
-  await toggle.click();
-  await expect(scene).toHaveAttribute("data-expanded", "false");
+  const { start, travel } = await story(page);
+  await expect(page.locator(".shawarma-reveal-toggle")).toHaveCount(0);
+  await scrollTo(page, start + travel * 0.25, 0.25);
+  const first = await page.locator(".hero").boundingBox();
+  const bread = await page
+    .locator(".shawarma-layer--bread")
+    .evaluate((element) => getComputedStyle(element).transform);
+  await scrollTo(page, start + travel * 0.75, 0.75);
+  const second = await page.locator(".hero").boundingBox();
+  expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
+  expect(
+    await page
+      .locator(".shawarma-layer--bread")
+      .evaluate((element) => getComputedStyle(element).transform),
+  ).not.toBe(bread);
+  await scrollTo(page, start + travel, 1);
+  await expect(page.locator(".shawarma-scene")).toHaveAttribute(
+    "data-expanded",
+    "true",
+  );
+  await scrollTo(page, start + travel + 160, 1);
+  expect((await page.locator(".hero").boundingBox())!.y).toBeLessThan(
+    second!.y - 140,
+  );
+  await scrollTo(page, start + travel * 0.25, 0.25);
+  await scrollTo(page, 0, 0);
+  await expect(page.locator(".hero-food")).toHaveCSS("opacity", "1");
 });
 
-test.describe("touch phone ingredient reveal", () => {
+test.describe("phone scroll reveal", () => {
   test.use({ hasTouch: true, isMobile: true });
-
   for (const width of [320, 390]) {
     for (const locale of ["ar", "fr", "en"]) {
-      test(`${locale} at ${width}px keeps the opened ingredients inside the artwork`, async ({
+      test(`${locale} at ${width}px pins the shawarma at screen center and releases it`, async ({
         page,
       }) => {
         await page.setViewportSize({ width, height: 844 });
-        await page.addInitScript((language) => {
-          localStorage.setItem("lma-language", language);
-        }, locale);
-        const scene = await openScene(page);
-        await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        const toggle = page.locator(".shawarma-reveal-toggle");
-        await toggle.tap();
-        await expect(scene).toHaveAttribute("data-expanded", "true");
-        await settleScene(scene);
-
-        const layout = await page.locator(".hero-art").evaluate((art) => {
-          const frame = art.getBoundingClientRect();
-          const image = art.querySelector<HTMLImageElement>(
-            ".shawarma-layer img",
-          )!;
-          const canvas = document.createElement("canvas");
-          canvas.width = image.naturalWidth;
-          canvas.height = image.naturalHeight;
-          const context = canvas.getContext("2d")!;
-          context.drawImage(image, 0, 0);
-          const pixels = context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height,
-          ).data;
-          return {
-            overflow: document.documentElement.scrollWidth - innerWidth,
-            layers: Array.from(
-              art.querySelectorAll<HTMLElement>(".shawarma-layer"),
-            ).map((layer) => {
-              // Each ingredient uses a clipped region of one transparent atlas.
-              // Its full DOM box includes the other three, invisible ingredients.
-              const inset = getComputedStyle(layer)
-                .clipPath.replace(/^inset\(|\)$/g, "")
-                .split(/\s+/);
-              const edges = [
-                inset[0],
-                inset[1] ?? inset[0],
-                inset[2] ?? inset[0],
-                inset[3] ?? inset[1] ?? inset[0],
-              ];
-              const pixelInset = (
-                value: string,
-                size: number,
-                naturalSize: number,
-              ) =>
-                value.endsWith("%")
-                  ? (parseFloat(value) / 100) * naturalSize
-                  : (parseFloat(value) / size) * naturalSize;
-              const top = Math.ceil(
-                pixelInset(edges[0], layer.clientHeight, canvas.height),
-              );
-              const right =
-                canvas.width -
-                Math.ceil(
-                  pixelInset(edges[1], layer.clientWidth, canvas.width),
-                );
-              const bottom =
-                canvas.height -
-                Math.ceil(
-                  pixelInset(edges[2], layer.clientHeight, canvas.height),
-                );
-              const left = Math.ceil(
-                pixelInset(edges[3], layer.clientWidth, canvas.width),
-              );
-              let minX = canvas.width,
-                minY = canvas.height,
-                maxX = -1,
-                maxY = -1;
-              for (let y = top; y < bottom; y++) {
-                for (let x = left; x < right; x++) {
-                  if (pixels[(y * canvas.width + x) * 4 + 3] < 8) continue;
-                  minX = Math.min(minX, x);
-                  minY = Math.min(minY, y);
-                  maxX = Math.max(maxX, x + 1);
-                  maxY = Math.max(maxY, y + 1);
-                }
-              }
-              // Invisible measurement points inherit the same perspective and
-              // rotation as the photo; no rendering style is changed for the test.
-              const corners = [
-                [minX, minY],
-                [maxX, minY],
-                [minX, maxY],
-                [maxX, maxY],
-              ].map(([x, y]) => {
-                const point = document.createElement("span");
-                point.style.cssText = `position:absolute;visibility:hidden;width:0;height:0;left:${(x / canvas.width) * layer.clientWidth}px;top:${(y / canvas.height) * layer.clientHeight}px`;
-                layer.append(point);
-                const projected = point.getBoundingClientRect();
-                point.remove();
-                return projected;
-              });
-              const bounds = {
-                left: Math.min(...corners.map((point) => point.left)),
-                top: Math.min(...corners.map((point) => point.top)),
-                right: Math.max(...corners.map((point) => point.right)),
-                bottom: Math.max(...corners.map((point) => point.bottom)),
-              };
-              return {
-                width: maxX - minX,
-                height: maxY - minY,
-                left: bounds.left - frame.left,
-                top: bounds.top - frame.top,
-                right: frame.right - bounds.right,
-                bottom: frame.bottom - bounds.bottom,
-              };
-            }),
-          };
-        });
+        await page.addInitScript(
+          (language) => localStorage.setItem("lma-language", language),
+          locale,
+        );
+        const { start, travel } = await story(page);
+        expect(start).toBeGreaterThan(0);
+        await scrollTo(page, Math.max(0, start - 50), 0);
+        await expect(page.locator(".hero-food")).toHaveCSS("opacity", "1");
+        await scrollTo(page, start + travel * 0.25, 0.25);
+        const first = await page.locator(".hero-art").boundingBox();
+        expect(Math.abs(first!.y + first!.height / 2 - 422)).toBeLessThan(2);
+        await scrollTo(page, start + travel * 0.75, 0.75);
+        const second = await page.locator(".hero-art").boundingBox();
+        expect(Math.abs(first!.y - second!.y)).toBeLessThan(2);
+        await scrollTo(page, start + travel, 1);
+        await expect(page.locator(".shawarma-layers")).toHaveCSS(
+          "opacity",
+          "1",
+        );
+        await scrollTo(page, start + travel + 160, 1);
+        expect((await page.locator(".hero-art").boundingBox())!.y).toBeLessThan(
+          first!.y - 140,
+        );
         expect(
-          layout.overflow,
-          "the hero must not create horizontal scrolling",
+          await page.evaluate(
+            () => document.documentElement.scrollWidth - innerWidth,
+          ),
         ).toBeLessThanOrEqual(0);
-        expect(layout.layers).toHaveLength(4);
-        for (const [index, layer] of layout.layers.entries()) {
-          expect(
-            layer.width,
-            `ingredient ${index + 1} has visible width`,
-          ).toBeGreaterThan(0);
-          expect(
-            layer.height,
-            `ingredient ${index + 1} has visible height`,
-          ).toBeGreaterThan(0);
-          for (const edge of ["left", "top", "right", "bottom"] as const) {
-            expect(
-              layer[edge],
-              `ingredient ${index + 1} stays inside the ${edge} edge`,
-            ).toBeGreaterThanOrEqual(-2);
-          }
-        }
-        await toggle.tap();
-        await expect(scene).toHaveAttribute("data-expanded", "false");
+        await scrollTo(page, start + travel * 0.5, 0.5);
+        if (locale === "ar")
+          await page.screenshot({
+            path: `artifacts/hero-animation/scroll-mobile-${width}.png`,
+          });
       });
     }
   }
 });
 
-test("pointer depth resets on leave and the motion control stops and resumes it", async ({
-  page,
-}) => {
-  const scene = await openScene(page);
-  await settleScene(scene);
-  const depth = scene.locator(".shawarma-depth");
-  const motion = page.locator(".shawarma-motion-toggle");
-  const resting = await depth.evaluate(
-    (element) => getComputedStyle(element).transform,
+test("reduced motion bypasses the scroll runway", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator(".hero-story")).toHaveAttribute(
+    "data-scroll-enabled",
+    "false",
   );
-  await expect(motion).toHaveAttribute("aria-pressed", "false");
-
-  await pointAtScene(page, scene);
-  await expect
-    .poll(() =>
-      depth.evaluate((element) => getComputedStyle(element).transform),
-    )
-    .not.toBe(resting);
-  await page.mouse.move(0, 0);
-  await expect(depth).toHaveCSS("transform", resting);
-
-  await motion.click();
-  await expect(motion).toHaveAttribute("aria-pressed", "true");
-  await expect
-    .poll(() =>
-      depth.evaluate((element) => {
-        const transform = getComputedStyle(element).transform;
-        return (
-          transform === "none" || new DOMMatrixReadOnly(transform).isIdentity
-        );
-      }),
-    )
-    .toBe(true);
-  const pausedTransform = await depth.evaluate(
-    (element) => getComputedStyle(element).transform,
+  await expect(page.locator(".shawarma-scroll-cue")).toHaveCount(0);
+  await expect(page.locator(".hero-food")).toHaveCSS("animation-name", "none");
+  await page.evaluate(() => window.scrollTo({ top: 400, behavior: "instant" }));
+  await expect(page.locator(".shawarma-scene")).toHaveAttribute(
+    "data-progress",
+    "0.0000",
   );
-  await pointAtScene(page, scene);
-  await nextFrames(scene);
-  await expect(depth).toHaveCSS("transform", pausedTransform);
-  expect(
-    await scene.evaluate((element) =>
-      element
-        .getAnimations({ subtree: true })
-        .some((animation) => animation.playState === "running"),
-    ),
-    "pausing also stops decorative scene animations",
-  ).toBe(false);
-
-  await motion.click();
-  await expect(motion).toHaveAttribute("aria-pressed", "false");
-  await pointAtScene(page, scene);
-  await expect
-    .poll(() =>
-      depth.evaluate((element) => getComputedStyle(element).transform),
-    )
-    .not.toBe(resting);
+  expect((await page.locator(".hero").boundingBox())!.y).toBeLessThan(0);
 });
 
-test("reduced motion keeps the reveal usable without animation or pointer tilt", async ({
+test("a failed reveal image keeps the original hero and does not pin scrolling", async ({
   page,
 }) => {
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  const scene = await openScene(page);
-  const depth = scene.locator(".shawarma-depth");
-  const resting = await depth.evaluate(
-    (element) => getComputedStyle(element).transform,
+  await page.route("**/hero/shawarma-exploded-768.webp", (route) =>
+    route.abort(),
   );
-  await pointAtScene(page, scene);
-  await nextFrames(scene);
-  await expect(depth).toHaveCSS("transform", resting);
+  await page.goto("/");
+  await expect(page.locator(".hero-story")).toHaveAttribute(
+    "data-scroll-enabled",
+    "false",
+  );
+  await expect(page.locator(".hero-food")).toHaveCSS("opacity", "1");
+  await expect(page.locator(".shawarma-scroll-cue")).toHaveCount(0);
+});
 
-  await page.locator(".shawarma-reveal-toggle").click();
-  await expect(scene).toHaveAttribute("data-expanded", "true");
-  await pointAtScene(page, scene);
-  await nextFrames(scene);
-  await expect(depth).toHaveCSS("transform", resting);
-  expect(
-    await scene.evaluate((element) =>
-      element
-        .getAnimations({ subtree: true })
-        .some((animation) => animation.playState === "running"),
-    ),
-    "reduced motion must also cover newly revealed layers",
-  ).toBe(false);
+test("the menu link can skip the pinned sequence", async ({ page }) => {
+  await story(page);
+  await page.locator('.hero-buttons a[href="/#menu"]').click();
+  await expect(page).toHaveURL(/#menu$/);
+  const anchorOffset = await page
+    .locator("#menu")
+    .evaluate(
+      (menu) =>
+        parseFloat(
+          getComputedStyle(document.documentElement).scrollPaddingTop,
+        ) + parseFloat(getComputedStyle(menu).scrollMarginTop),
+    );
+  await expect
+    .poll(async () =>
+      Math.abs((await page.locator("#menu").boundingBox())!.y - anchorOffset),
+    )
+    .toBeLessThan(3);
 });

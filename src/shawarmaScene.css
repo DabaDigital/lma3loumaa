@@ -1,3 +1,75 @@
+/* Native sticky sections hold the composition while scroll distance opens the layers. */
+.hero-story {
+  --reveal: 0;
+  position: relative;
+  background: #073d46;
+}
+.hero-art-track {
+  grid-area: art;
+  min-width: 0;
+}
+.hero-story[data-scroll-enabled="true"][data-scroll-layout="desktop"] {
+  height: calc(var(--hero-height) + var(--hero-travel));
+}
+.hero-story[data-scroll-enabled="true"][data-scroll-layout="desktop"] > .hero {
+  position: sticky;
+  top: var(--story-pin-top);
+  min-height: var(--hero-viewport-height);
+  display: flex;
+  flex-direction: column;
+}
+.hero-story[data-scroll-layout="desktop"] .hero-grid {
+  flex: 1;
+}
+.shawarma-scroll-cue {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding-bottom: 7px;
+  color: #f7d58d;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.shawarma-scroll-meter {
+  position: absolute;
+  bottom: 0;
+  height: 2px;
+  left: 0;
+  right: 0;
+  background: #f7d58d25;
+  overflow: hidden;
+}
+.shawarma-scroll-meter i {
+  display: block;
+  height: 100%;
+  background: #f7d58d;
+  transform: scaleX(var(--reveal, 0));
+  transform-origin: left;
+}
+.shawarma-scroll-cue[dir="rtl"] .shawarma-scroll-meter i {
+  transform-origin: right;
+}
+@media (max-width: 650px) {
+  .hero-story[data-scroll-enabled="true"] > .hero {
+    overflow: clip;
+  }
+  .hero-story[data-scroll-enabled="true"] .hero-art-track {
+    height: calc(var(--art-height) + var(--hero-travel));
+    margin-block: 18px 44px;
+    align-self: stretch;
+  }
+  .hero-story[data-scroll-enabled="true"] .hero-art-track > .hero-art {
+    position: sticky;
+    top: var(--story-pin-top);
+    margin: 0 auto;
+  }
+  .shawarma-scroll-cue {
+    font-size: 9px;
+    gap: 6px;
+  }
+}
 /* The product lives in a perspective scene; the price and brand badges stay steady. */
 .shawarma-scene {
   position: absolute;
@@ -13,6 +85,44 @@
   transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
   transition: transform 650ms var(--scene-ease);
   animation: shawarma-arrive 1250ms var(--scene-ease) both;
+}
+.shawarma-rotisserie {
+  position: absolute;
+  width: 23%;
+  height: 48%;
+  right: 4%;
+  top: 3%;
+  transform: translateZ(-20px) rotate(9deg);
+  pointer-events: none;
+}
+.shawarma-rotisserie[hidden] {
+  display: none;
+}
+.shawarma-rotisserie img,
+.rotisserie-model {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+.rotisserie-model {
+  opacity: 0;
+}
+.shawarma-rotisserie[data-renderer="webgl"] .rotisserie-model {
+  opacity: 1;
+}
+.shawarma-rotisserie[data-renderer="webgl"] img {
+  opacity: 0;
+}
+@media (max-width: 650px) {
+  .shawarma-rotisserie {
+    width: 24%;
+    height: 42%;
+    top: 3%;
+    right: 4%;
+  }
 }
 .shawarma-spotlight {
   position: absolute;
@@ -31,10 +141,10 @@
   box-shadow:
     inset -15px -18px 35px #633e3826,
     0 0 70px #e8c8760e;
-  transform: translateZ(-65px) rotate(-12deg);
-  transition:
-    transform 1100ms var(--scene-ease),
-    opacity 900ms;
+  transform: translateZ(calc(-65px - var(--reveal, 0) * 25px))
+    rotateY(calc(var(--reveal, 0) * -22deg)) rotate(-12deg)
+    scale(calc(1 - var(--reveal, 0) * 0.18));
+  opacity: calc(1 - var(--reveal, 0) * 0.76);
 }
 .shawarma-halo::before,
 .shawarma-halo::after {
@@ -107,10 +217,8 @@
   width: 104%;
   height: 73%;
   animation: shawarma-float 6s ease-in-out infinite;
-  transition:
-    opacity 450ms ease,
-    scale 950ms var(--scene-ease);
-  scale: 1;
+  opacity: clamp(0, calc(1 - var(--reveal, 0) * 50), 1);
+  scale: calc(1 - var(--reveal, 0) * 0.18);
 }
 .shawarma-layers {
   position: absolute;
@@ -118,16 +226,16 @@
   aspect-ratio: 2 / 3;
   left: 50%;
   top: -4%;
-  transform: translateX(-50%);
-  transform-style: preserve-3d;
-  opacity: 0;
-  transition: opacity 350ms ease;
+  transform: translateX(-50%) translateZ(40px) scale(calc(1.45 - var(--reveal, 0) * 0.45));
+  transform-origin: 50% 55%;
+  /* Composite clipped ingredients together to avoid nested 3D clipping on mobile. */
+  transform-style: flat;
+  opacity: clamp(0, calc(var(--reveal, 0) * 50), 1);
   pointer-events: none;
 }
 .shawarma-layer {
   position: absolute;
   inset: 0;
-  transition: transform 1150ms var(--scene-ease);
 }
 .shawarma-layer img {
   display: block;
@@ -137,55 +245,39 @@
 }
 .shawarma-layer--bread {
   clip-path: inset(0 0 70%);
-  transform: translate3d(0, 23%, 20px) rotate(-6deg);
+  transform: translate3d(
+      calc(var(--reveal, 0) * -3%),
+      calc(23% - var(--reveal, 0) * 24%),
+      calc(20px + var(--reveal, 0) * 15px)
+    )
+    rotate(calc(-6deg + var(--reveal, 0) * 1deg));
 }
 .shawarma-layer--chicken {
   clip-path: inset(30% 0 42.5%);
-  transform: translate3d(0, 6%, 40px);
+  transform: translate3d(
+      calc(var(--reveal, 0) * 3%),
+      calc(6% - var(--reveal, 0) * 6%),
+      calc(40px + var(--reveal, 0) * 20px)
+    )
+    rotate(calc(var(--reveal, 0) * 4deg));
 }
 .shawarma-layer--greens {
   clip-path: inset(57.5% 0 23.5%);
-  transform: translate3d(0, -10%, 55px) rotate(5deg);
+  transform: translate3d(
+      calc(var(--reveal, 0) * -3%),
+      calc(-10% + var(--reveal, 0) * 11%),
+      calc(55px + var(--reveal, 0) * 20px)
+    )
+    rotate(calc(5deg - var(--reveal, 0) * 9deg));
 }
 .shawarma-layer--sauce {
   clip-path: inset(76.5% 0 0);
-  transform: translate3d(0, -23%, 15px);
-}
-.shawarma-scene[data-expanded="true"] .hero-food {
-  opacity: 0;
-  scale: 0.82;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-halo {
-  transform: translateZ(-90px) rotateY(-22deg) scale(0.82);
-  opacity: 0.24;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layers {
-  opacity: 1;
-  transition-delay: 80ms;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer {
-  animation: shawarma-ingredient-float 5s ease-in-out infinite;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--chicken {
-  animation-delay: -1.4s;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--greens {
-  animation-delay: -2.6s;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--sauce {
-  animation-delay: -3.8s;
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--bread {
-  transform: translate3d(-3%, -1%, 35px) rotate(-5deg);
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--chicken {
-  transform: translate3d(3%, 0, 60px) rotate(4deg);
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--greens {
-  transform: translate3d(-3%, 1%, 75px) rotate(-4deg);
-}
-.shawarma-scene[data-expanded="true"] .shawarma-layer--sauce {
-  transform: translate3d(2%, 2%, 25px) rotate(3deg);
+  transform: translate3d(
+      calc(var(--reveal, 0) * 2%),
+      calc(-23% + var(--reveal, 0) * 25%),
+      calc(15px + var(--reveal, 0) * 10px)
+    )
+    rotate(calc(var(--reveal, 0) * 3deg));
 }
 .shawarma-spices {
   position: absolute;
@@ -262,11 +354,8 @@
   color: #fff0c9;
   font-size: 11px;
   font-weight: 650;
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 350ms,
-    transform 600ms var(--scene-ease);
+  opacity: clamp(0, calc((var(--reveal, 0) - 0.55) * 3), 1);
+  transform: translateY(calc((1 - var(--reveal, 0)) * 10px));
 }
 .shawarma-annotation small {
   font: 8px monospace;
@@ -296,11 +385,6 @@
   right: 6%;
   top: 78%;
 }
-.shawarma-scene[data-expanded="true"] .shawarma-annotation {
-  opacity: 1;
-  transform: translateY(0);
-  transition-delay: 550ms;
-}
 .shawarma-controls {
   position: absolute;
   bottom: -30px;
@@ -315,33 +399,6 @@
   max-width: 100%;
   padding-bottom: 22px;
 }
-.shawarma-reveal-toggle {
-  appearance: none;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  border: 1px solid #f7d28a70;
-  border-radius: 100px;
-  background: #073e46e8;
-  color: #f7d58d;
-  padding: 11px 17px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 650;
-  cursor: pointer;
-  min-height: 42px;
-  transition:
-    background 180ms,
-    box-shadow 180ms;
-}
-.shawarma-reveal-toggle:hover {
-  background: #145963;
-  box-shadow: 0 0 25px #f3ce7d15;
-}
-.shawarma-reveal-toggle:disabled {
-  cursor: wait;
-  opacity: 0.55;
-}
 .shawarma-motion-toggle {
   display: grid;
   place-items: center;
@@ -354,7 +411,6 @@
   cursor: pointer;
   flex-shrink: 0;
 }
-.shawarma-reveal-toggle:focus-visible,
 .shawarma-motion-toggle:focus-visible {
   outline: 2px solid #fff4d6;
   outline-offset: 4px;
@@ -379,19 +435,13 @@
 .hero-art:has(.shawarma-scene) {
   margin-bottom: 30px;
 }
-.hero-art:has(.shawarma-scene[data-expanded="true"]) .hero-sticker {
-  opacity: 0;
-  pointer-events: none;
-}
 .hero-art:has(.shawarma-scene) .hero-sticker {
-  transition: opacity 350ms;
+  opacity: clamp(0, calc(1 - var(--reveal, 0) * 4), 1);
+  pointer-events: none;
 }
 .hero-art:has(.shawarma-scene) .hero-arabic {
   pointer-events: none;
-  transition: opacity 350ms;
-}
-.hero-art:has(.shawarma-scene[data-expanded="true"]) .hero-arabic {
-  opacity: 0;
+  opacity: clamp(0, calc(1 - var(--reveal, 0) * 4), 1);
 }
 .shawarma-scene[data-still="true"] .shawarma-depth {
   transform: rotateX(0deg) rotateY(0deg);
@@ -423,15 +473,6 @@
     opacity: 1;
     scale: 1;
     translate: 0 0;
-  }
-}
-@keyframes shawarma-ingredient-float {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -3px;
   }
 }
 @keyframes shawarma-orbit-back {
@@ -523,10 +564,6 @@
   .shawarma-motion-toggle {
     min-width: 44px;
     min-height: 44px;
-  }
-  .shawarma-reveal-toggle {
-    min-height: 44px;
-    padding-inline: 14px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

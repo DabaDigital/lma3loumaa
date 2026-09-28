@@ -1,50 +1,52 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
-import { ArrowUpRight, Layers3, Pause, Play, X } from "lucide-react";
+import { ArrowDown, Pause, Play } from "lucide-react";
 import { FoodVisual } from "./components";
 import type { Locale } from "./data";
+import { useShawarmaScroll } from "./useShawarmaScroll";
+import { RotisserieModel } from "./RotisserieModel";
 import "./shawarmaScene.css";
 
 const copy = {
   ar: {
     open: "اكتشف السرّ",
-    close: "جمع اللذّة",
+    close: "كمّل، اللذّة كتسنّاك",
     hint: "كل طبقة، حكاية",
     bread: "خبز محمّر",
     chicken: "دجاج مشوي",
     greens: "خضرة وقرمشة",
     sauce: "اللمسة الأخيرة",
-    pause: "وقف الحركة",
-    play: "شغّل الحركة",
+    pause: "وقف حركة الطفو",
+    play: "شغّل حركة الطفو",
     loading: "كنوجدو السرّ…",
   },
   fr: {
-    open: "Découvrez le secret",
-    close: "Tout réunir",
+    open: "Défilez pour découvrir le secret",
+    close: "Continuez, la suite vous attend",
     hint: "À chaque couche, une histoire",
     bread: "Pain doré",
     chicken: "Poulet grillé",
     greens: "La touche croquante",
     sauce: "La touche finale",
-    pause: "Mettre en pause",
-    play: "Animer",
+    pause: "Mettre le flottement en pause",
+    play: "Animer le flottement",
     loading: "Un instant…",
   },
   en: {
-    open: "Reveal the secret",
-    close: "Bring it together",
+    open: "Scroll slowly. Reveal the secret.",
+    close: "Keep scrolling. There’s more.",
     hint: "Every layer tells a story",
     bread: "Golden pita",
     chicken: "Grilled chicken",
     greens: "A little crunch",
     sauce: "The finishing touch",
-    pause: "Pause animation",
-    play: "Play animation",
+    pause: "Pause floating motion",
+    play: "Play floating motion",
     loading: "One moment…",
   },
 };
 
-/** Photo layers in a CSS perspective scene: no WebGL, video or scroll capture. */
+/** Photo layers in a CSS perspective scene with a small scroll-driven rotisserie. */
 export function ShawarmaScene({
   locale,
   label,
@@ -57,9 +59,9 @@ export function ShawarmaScene({
   const root = useRef<HTMLDivElement>(null);
   const depth = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
+  const loadedLayers = useRef(new Set<number>());
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
   const [reduced, setReduced] = useState(
@@ -67,6 +69,8 @@ export function ShawarmaScene({
   );
   const text = copy[locale];
   const animate = motion && !paused && !reduced && visible;
+  const scrollEnabled = motion && !reduced && ready && !failed;
+  const expanded = useShawarmaScroll(root, scrollEnabled);
 
   function resetTilt() {
     cancelAnimationFrame(frame.current);
@@ -140,6 +144,7 @@ export function ShawarmaScene({
           <i />
         </div>
         <div className="shawarma-floor" aria-hidden="true" />
+        <RotisserieModel motion={motion && !reduced} />
         <FoodVisual kind="classic" className="hero-food" label={label} />
         <div
           className="shawarma-layers"
@@ -157,17 +162,14 @@ export function ShawarmaScene({
                 width="768"
                 height="1152"
                 decoding="async"
-                loading="lazy"
+                loading="eager"
+                fetchPriority="low"
                 draggable={false}
-                onLoad={index === 0 ? () => setReady(true) : undefined}
-                onError={
-                  index === 0
-                    ? () => {
-                        setFailed(true);
-                        setExpanded(false);
-                      }
-                    : undefined
-                }
+                onLoad={() => {
+                  loadedLayers.current.add(index);
+                  if (loadedLayers.current.size === 4) setReady(true);
+                }}
+                onError={() => setFailed(true)}
               />
             </div>
           ))}
@@ -212,21 +214,14 @@ export function ShawarmaScene({
             ? [text.bread, text.chicken, text.greens, text.sauce].join("، ")
             : ""}
         </span>
-        {!failed && (
-          <button
-            type="button"
-            className="shawarma-reveal-toggle"
-            aria-expanded={expanded}
-            aria-controls="shawarma-layers"
-            disabled={!ready}
-            onClick={() => setExpanded((value) => !value)}
-          >
-            {expanded ? <X size={15} /> : <Layers3 size={15} />}
-            <span>
-              {!ready ? text.loading : expanded ? text.close : text.open}
+        {scrollEnabled && (
+          <div className="shawarma-scroll-cue" aria-hidden="true">
+            <ArrowDown size={14} />
+            <span>{expanded ? text.close : text.open}</span>
+            <span className="shawarma-scroll-meter">
+              <i />
             </span>
-            {!expanded && <ArrowUpRight size={15} />}
-          </button>
+          </div>
         )}
         {motion && !reduced && (
           <button
