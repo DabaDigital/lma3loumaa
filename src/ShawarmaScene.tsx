@@ -145,34 +145,37 @@ export function ShawarmaScene({
         </div>
         <div className="shawarma-floor" aria-hidden="true" />
         <RotisserieModel motion={motion && !reduced} />
-        <FoodVisual kind="classic" className="hero-food" label={label} />
-        <div
-          className="shawarma-layers"
-          id="shawarma-layers"
-          aria-hidden="true"
-        >
-          {["bread", "chicken", "greens", "sauce"].map((layer, index) => (
-            <div
-              className={`shawarma-layer shawarma-layer--${layer}`}
-              key={layer}
-            >
-              <img
-                src="/assets/hero/shawarma-exploded-768.webp"
-                alt=""
-                width="768"
-                height="1152"
-                decoding="async"
-                loading="eager"
-                fetchPriority="low"
-                draggable={false}
-                onLoad={() => {
-                  loadedLayers.current.add(index);
-                  if (loadedLayers.current.size === 4) setReady(true);
-                }}
-                onError={() => setFailed(true)}
-              />
-            </div>
-          ))}
+        {/* The photo and its layers float together so the hand-off never jumps. */}
+        <div className="shawarma-product">
+          <FoodVisual kind="classic" className="hero-food" label={label} />
+          <div
+            className="shawarma-layers"
+            id="shawarma-layers"
+            aria-hidden="true"
+          >
+            {["bread", "chicken", "greens", "sauce"].map((layer, index) => (
+              <div
+                className={`shawarma-layer shawarma-layer--${layer}`}
+                key={layer}
+              >
+                <img
+                  src="/assets/hero/shawarma-exploded-768.webp"
+                  alt=""
+                  width="768"
+                  height="1152"
+                  decoding="async"
+                  loading="eager"
+                  fetchPriority="low"
+                  draggable={false}
+                  onLoad={() => {
+                    loadedLayers.current.add(index);
+                    if (loadedLayers.current.size === 4) setReady(true);
+                  }}
+                  onError={() => setFailed(true)}
+                />
+              </div>
+            ))}
+          </div>
         </div>
         <div
           className="shawarma-orbit shawarma-orbit--front"

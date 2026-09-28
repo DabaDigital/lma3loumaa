@@ -76,7 +76,13 @@
   inset: 0;
   perspective: 1000px;
   isolation: isolate;
+  container-type: size;
   --scene-ease: cubic-bezier(0.2, 0.75, 0.2, 1);
+  /* The photo frame and the layer stack share these so the layers can collapse onto the photo. */
+  --food-top: 12cqh;
+  --food-height: 73cqh;
+  --layers-top: -4cqh;
+  --layers-height: 98cqh;
 }
 .shawarma-depth {
   position: absolute;
@@ -212,21 +218,46 @@
   transform: translateZ(-30px);
   animation: shawarma-shadow 6s ease-in-out infinite;
 }
-.shawarma-scene .hero-food {
-  inset: 12% -2% auto;
-  width: 104%;
-  height: 73%;
+/* One flat plane: nesting another 3D level around the clipped layers cuts them off in Chromium.
+   It carries the photo's shadow so the shadow survives the hand-off, then lets it go as the layers part. */
+.shawarma-product {
+  position: absolute;
+  inset: 0;
   animation: shawarma-float 6s ease-in-out infinite;
+  filter: drop-shadow(0 34px 19px rgb(0 31 52 / calc(0.376 * (1 - var(--reveal, 0)))));
+}
+.shawarma-scene .hero-food {
+  inset: var(--food-top) -2% auto;
+  width: 104%;
+  height: var(--food-height);
+  animation: none;
+  filter: none;
   opacity: clamp(0, calc(1 - var(--reveal, 0) * 50), 1);
   scale: calc(1 - var(--reveal, 0) * 0.18);
 }
+/* Collapsed, the stack is measured against the contained 3:2 photo (width limited on narrow
+   scenes, height limited on wide ones); open, it keeps its own height-based size. */
 .shawarma-layers {
+  --photo: min(104cqw, var(--food-height) * 1.5);
+  /* tan(atan2()) divides two lengths: the photo width per unit of stack height. */
+  --fit: tan(atan2(var(--photo), var(--layers-height)));
+  --collapse: calc(1 - var(--reveal, 0));
   position: absolute;
-  height: 98%;
+  height: var(--layers-height);
   aspect-ratio: 2 / 3;
   left: 50%;
-  top: -4%;
-  transform: translateX(-50%) translateZ(40px) scale(calc(1.45 - var(--reveal, 0) * 0.45));
+  top: var(--layers-top);
+  /* Collapsed, the 55% origin lands on a fixed point of the photo; open, nothing moves. */
+  transform: translateX(-50%)
+    translate(
+      calc(var(--collapse) * var(--photo) * -0.03),
+      calc(
+        var(--collapse) *
+          (var(--food-top) + var(--food-height) / 2 + var(--photo) * 0.1 -
+            var(--layers-top) - var(--layers-height) * 0.55)
+      )
+    )
+    scale(calc(1 + var(--collapse) * (1.19 * var(--fit) - 1)));
   transform-origin: 50% 55%;
   /* Composite clipped ingredients together to avoid nested 3D clipping on mobile. */
   transform-style: flat;
@@ -248,18 +279,18 @@
   z-index: 4;
   clip-path: inset(0 0 70%);
   transform: translate3d(
-      calc(var(--reveal, 0) * -3%),
-      calc(23% - var(--reveal, 0) * 24%),
+      calc(2% - var(--reveal, 0) * 5%),
+      calc(19% - var(--reveal, 0) * 20%),
       calc(20px + var(--reveal, 0) * 15px)
     )
-    rotate(calc(-6deg + var(--reveal, 0) * 1deg));
+    rotate(calc(-2deg - var(--reveal, 0) * 3deg));
 }
 .shawarma-layer--chicken {
   z-index: 3;
   clip-path: inset(30% 0 42.5%);
   transform: translate3d(
       calc(var(--reveal, 0) * 3%),
-      calc(6% - var(--reveal, 0) * 6%),
+      calc(7% - var(--reveal, 0) * 7%),
       calc(40px + var(--reveal, 0) * 20px)
     )
     rotate(calc(var(--reveal, 0) * 4deg));
@@ -268,18 +299,19 @@
   z-index: 2;
   clip-path: inset(57.5% 0 23.5%);
   transform: translate3d(
-      calc(var(--reveal, 0) * -3%),
-      calc(-10% + var(--reveal, 0) * 11%),
+      calc(-1% - var(--reveal, 0) * 2%),
+      calc(-8% + var(--reveal, 0) * 9%),
       calc(55px + var(--reveal, 0) * 20px)
     )
-    rotate(calc(5deg - var(--reveal, 0) * 9deg));
+    rotate(calc(-2deg - var(--reveal, 0) * 2deg))
+    scale(calc(1.1 - var(--reveal, 0) * 0.1), 1);
 }
 .shawarma-layer--sauce {
   z-index: 1;
   clip-path: inset(76.5% 0 0);
   transform: translate3d(
       calc(var(--reveal, 0) * 2%),
-      calc(-23% + var(--reveal, 0) * 25%),
+      calc(-26% + var(--reveal, 0) * 28%),
       calc(15px + var(--reveal, 0) * 10px)
     )
     rotate(calc(var(--reveal, 0) * 3deg));
@@ -530,14 +562,10 @@
     left: 12%;
     top: 7%;
   }
-  .shawarma-scene .hero-food {
-    inset: 12% -2% auto;
-    width: 104%;
-    height: 75%;
-  }
-  .shawarma-layers {
-    height: 94%;
-    top: 0;
+  .shawarma-scene {
+    --food-height: 75cqh;
+    --layers-top: 0cqh;
+    --layers-height: 94cqh;
   }
   .shawarma-orbit {
     width: 98%;
