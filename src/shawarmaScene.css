@@ -243,7 +243,9 @@
   height: 100%;
   object-fit: contain;
 }
+/* The flat group ignores translateZ, so z-index keeps upper ingredients over lower ones. */
 .shawarma-layer--bread {
+  z-index: 4;
   clip-path: inset(0 0 70%);
   transform: translate3d(
       calc(var(--reveal, 0) * -3%),
@@ -253,6 +255,7 @@
     rotate(calc(-6deg + var(--reveal, 0) * 1deg));
 }
 .shawarma-layer--chicken {
+  z-index: 3;
   clip-path: inset(30% 0 42.5%);
   transform: translate3d(
       calc(var(--reveal, 0) * 3%),
@@ -262,6 +265,7 @@
     rotate(calc(var(--reveal, 0) * 4deg));
 }
 .shawarma-layer--greens {
+  z-index: 2;
   clip-path: inset(57.5% 0 23.5%);
   transform: translate3d(
       calc(var(--reveal, 0) * -3%),
@@ -271,6 +275,7 @@
     rotate(calc(5deg - var(--reveal, 0) * 9deg));
 }
 .shawarma-layer--sauce {
+  z-index: 1;
   clip-path: inset(76.5% 0 0);
   transform: translate3d(
       calc(var(--reveal, 0) * 2%),
