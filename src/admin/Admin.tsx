@@ -27,24 +27,28 @@ import { supabase } from "../supabase";
 import { useContent } from "../content";
 import type {
   Category,
-  Links,
   MenuItem,
   Location,
   Managed,
+  SiteLink,
+  SocialPost,
 } from "../content";
 import type { Locale } from "../data";
 import { copy } from "./copy";
 import { Editor } from "./Editor";
 import { ReviewsAdmin } from "./ReviewsAdmin";
 import { LinksAdmin } from "./LinksAdmin";
+import { PostsAdmin } from "./PostsAdmin";
 import "./admin.css";
 import { ContentSkeleton } from "../Skeleton";
 
 export type ContentSection = "items" | "categories" | "locations";
 export type Section = "overview" | ContentSection | "links" | "reviews";
 const routes = ["items", "categories", "locations", "links", "reviews"];
-// Stable, so the links form does not resync on every render before loading.
-const noLinks: Links = {};
+// Stable, so the link and post forms do not resync on every render before
+// their tables load.
+const noLinks: SiteLink[] = [];
+const noPosts: SocialPost[] = [];
 function isContentSection(section: Section): section is ContentSection {
   return (
     section === "items" || section === "categories" || section === "locations"
@@ -594,16 +598,28 @@ export default function Admin() {
               </section>
             </>
           ) : section === "links" ? (
-            <LinksAdmin
-              locale={locale}
-              links={content.links ?? noLinks}
-              failed={content.linksError}
-              onRetry={content.refresh}
-              onSaved={async () => {
-                setNotice("saved");
-                await content.refresh();
-              }}
-            />
+            <div className="admin-links-page">
+              <LinksAdmin
+                locale={locale}
+                links={content.links ?? noLinks}
+                failed={content.linksError}
+                onRetry={content.refresh}
+                onSaved={async () => {
+                  setNotice("saved");
+                  await content.refresh();
+                }}
+              />
+              <PostsAdmin
+                locale={locale}
+                posts={content.posts ?? noPosts}
+                failed={content.postsError}
+                onRetry={content.refresh}
+                onSaved={async () => {
+                  setNotice("saved");
+                  await content.refresh();
+                }}
+              />
+            </div>
           ) : (
             <section className="admin-panel">
               <div className="admin-filters">

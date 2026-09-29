@@ -1,18 +1,32 @@
 .skeleton,
 .review-photo-loading {
+  position: relative;
+  overflow: hidden;
   background-color: #dfe7df;
+}
+/* The sweep slides with transform so it runs on the compositor. Animating
+   background-position repainted on the main thread every frame, even for review
+   thumbnails waiting below the fold. */
+.skeleton::after,
+.review-photo-loading::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 250%;
   background-image: linear-gradient(
     100deg,
     transparent 25%,
     #ffffff70 45%,
     transparent 65%
   );
-  background-size: 250% 100%;
   animation: skeleton-shimmer 1.8s ease-in-out infinite;
 }
 /* Review photos wait on the same teal as the menu and location photo frames. */
 .review-photo-loading {
   background-color: var(--teal);
+}
+.review-photo-loading::after {
   background-image: linear-gradient(
     100deg,
     transparent 25%,
@@ -186,12 +200,13 @@
   margin-block: 15px 55px;
   max-width: 500px;
 }
+/* Same travel as the former 250%-wide background moving from 150% to -100%. */
 @keyframes skeleton-shimmer {
   from {
-    background-position: 150% 0;
+    transform: translateX(-90%);
   }
   to {
-    background-position: -100% 0;
+    transform: translateX(60%);
   }
 }
 @keyframes image-reveal {
@@ -258,18 +273,16 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .skeleton,
-  .review-photo-loading {
-    animation: none;
-    background-image: none;
+  .skeleton::after,
+  .review-photo-loading::after {
+    content: none;
   }
   .image-reveal {
     animation: none;
   }
 }
-[data-motion="off"] :is(.skeleton, .review-photo-loading) {
-  animation: none;
-  background-image: none;
+[data-motion="off"] :is(.skeleton, .review-photo-loading)::after {
+  content: none;
 }
 [data-motion="off"] .image-reveal {
   animation: none;

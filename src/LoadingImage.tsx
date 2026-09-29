@@ -6,9 +6,11 @@ type Props = ImgHTMLAttributes<HTMLImageElement>;
 
 function ImageState({ className = "", onLoad, onError, ...props }: Props) {
   // Cached images show at once; downloaded ones stay behind the skeleton until
-  // complete, then fade in rather than appearing half-drawn.
+  // complete, then fade in rather than appearing half-drawn. Images that load
+  // eagerly (the hero, the logo) show as they arrive: in the prerendered page
+  // they paint before the app script runs, and nothing would reveal them.
   const [state, setState] = useState<"loading" | "revealed" | "ready">(
-    "loading",
+    props.loading === "lazy" ? "loading" : "ready",
   );
   const imageRef = useCallback((image: HTMLImageElement | null) => {
     if (image?.complete) setState("ready");

@@ -504,6 +504,7 @@ test("follow-us section sits between reviews and locations and links to Instagra
 }) => {
   const instagram = "https://www.instagram.com/lma3loumaa/";
   await page.goto("/");
+  await expect(page.locator(".locations-section")).toBeAttached();
   const order = await page.evaluate(() =>
     [
       ...document.querySelectorAll(
@@ -527,14 +528,18 @@ test("follow-us section sits between reviews and locations and links to Instagra
   await expect(profile).toHaveCount(1);
   await expect(profile).toContainText("@lma3loumaa");
   await expect(profile).toHaveAttribute("href", instagram);
-  const posts = social.getByRole("list", { name: "Un aperçu de nos photos" });
+  // With no posts yet, four of the restaurant's photos fill the row.
+  const posts = social.getByRole("list", { name: "Nos publications et reels" });
   await expect(posts.getByRole("listitem")).toHaveCount(4);
+  await expect(posts.locator(".social-chip").first()).toHaveText("La signature");
   for (const link of await posts.getByRole("link").all())
     await expect(link).toHaveAttribute("href", instagram);
   await expect(social.locator('a[href*="facebook"]')).toHaveCount(0);
-  await expect(
-    social.getByRole("link", { name: "Voir plus sur Instagram" }),
-  ).toHaveAttribute("target", "_blank");
+  const more = social.getByRole("link", { name: "Voir plus sur Instagram" });
+  await expect(more).toHaveAttribute("href", instagram);
+  await expect(more).toHaveAttribute("target", "_blank");
+  // A second profile would add "or follow us on …"; there is none here.
+  await expect(social.locator(".social-cta-alt")).toHaveCount(0);
   await expect(
     page.locator("footer").getByRole("link", { name: "Instagram" }),
   ).toHaveAttribute("href", instagram);
@@ -544,7 +549,7 @@ test("follow-us section sits between reviews and locations and links to Instagra
   await expect(social.getByRole("heading", { level: 2 })).toHaveText(
     "تابعونا وخليكم ديما مع المعلومة",
   );
-  await expect(social.locator(".social-follow")).toHaveText("تابع");
+  await expect(social.locator(".social-follow")).toHaveText("تابعنا");
 });
 
 test("desktop and mobile layouts load without broken assets or runtime errors", async ({

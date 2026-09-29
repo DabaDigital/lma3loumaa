@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 
-/** A native sticky runway consumes scroll distance without trapping wheel/touch input. */
+/** A native sticky runway consumes scroll distance without trapping wheel/touch input.
+ * CSS lays the runway out (shawarmaScene.css), so it is in the first paint and the
+ * page never jumps when the app starts or the reveal artwork arrives. This hook
+ * turns it off without motion, measures the pin, and drives the layers once they
+ * are `ready`. */
 export function useShawarmaScroll(
   root: RefObject<HTMLDivElement | null>,
-  enabled: boolean,
+  runway: boolean,
+  ready: boolean,
 ) {
   const [expanded, setExpanded] = useState(false);
+  const enabled = runway && ready;
 
   useEffect(() => {
     const scene = root.current;
@@ -26,13 +32,15 @@ export function useShawarmaScroll(
     let previous = "";
     let displayed: number | null = null;
     let lastTime = 0;
+    story.dataset.scrollRunway = String(runway);
     story.dataset.scrollEnabled = String(enabled);
 
     function render(time: number) {
       frame = 0;
       if (disposed) return;
       const anchor = mobile ? track! : story!;
-      const target = enabled
+      const target =
+        enabled && travel
         ? Math.max(
             0,
             Math.min(1, (pinTop - anchor.getBoundingClientRect().top) / travel),
@@ -68,22 +76,15 @@ export function useShawarmaScroll(
       story!.dataset.scrollLayout = mobile ? "mobile" : "desktop";
       const headerHeight = header?.offsetHeight ?? 80;
       const viewHeight = document.documentElement.clientHeight;
-      story!.style.setProperty(
-        "--hero-viewport-height",
-        `${viewHeight - headerHeight}px`,
-      );
       const artHeight = art!.offsetHeight;
       const heroHeight = hero!.offsetHeight;
       pinTop = mobile
         ? Math.max(headerHeight + 12, (viewHeight - artHeight) / 2)
         : Math.min(headerHeight, viewHeight - heroHeight);
-      travel = Math.round(Math.max(550, Math.min(1000, viewHeight * 0.9)));
-      story!.style.setProperty(
-        "--hero-travel",
-        enabled ? `${travel}px` : "0px",
-      );
-      story!.style.setProperty("--hero-height", `${heroHeight}px`);
-      story!.style.setProperty("--art-height", `${artHeight}px`);
+      // The scroll distance is the runway CSS laid out (0px without it).
+      travel =
+        parseFloat(getComputedStyle(story!).getPropertyValue("--hero-travel")) ||
+        0;
       story!.style.setProperty("--story-pin-top", `${pinTop}px`);
       requestRender();
     }
@@ -103,9 +104,10 @@ export function useShawarmaScroll(
       resize.disconnect();
       window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", measure);
+      story.dataset.scrollRunway = "false";
       story.dataset.scrollEnabled = "false";
     };
-  }, [enabled, root]);
+  }, [runway, enabled, root]);
 
   return expanded;
 }

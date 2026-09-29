@@ -46,6 +46,8 @@ const copy = {
   },
 };
 
+const layersImage = "/assets/hero/shawarma-exploded-768.webp";
+
 /** Photo layers in a CSS perspective scene with a small scroll-driven rotisserie. */
 export function ShawarmaScene({
   locale,
@@ -64,13 +66,15 @@ export function ShawarmaScene({
   const [failed, setFailed] = useState(false);
   const [paused, setPaused] = useState(false);
   const [visible, setVisible] = useState(true);
+  const [layersSource, setLayersSource] = useState<string>();
   const [reduced, setReduced] = useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   const text = copy[locale];
   const animate = motion && !paused && !reduced && visible;
-  const scrollEnabled = motion && !reduced && ready && !failed;
-  const expanded = useShawarmaScroll(root, scrollEnabled);
+  // The runway is reserved before the layers load; failed artwork releases it.
+  const runway = motion && !reduced && !failed;
+  const expanded = useShawarmaScroll(root, runway, ready);
 
   function resetTilt() {
     cancelAnimationFrame(frame.current);
@@ -90,6 +94,9 @@ export function ShawarmaScene({
     });
     if (root.current) observer.observe(root.current);
     document.addEventListener("visibilitychange", onVisibility);
+    // The layers only show once scrolling opens them, and scrolling needs the
+    // app: they download once it runs, after the prerendered page has painted.
+    setLayersSource(layersImage);
     return () => {
       preference.removeEventListener("change", onPreference);
       document.removeEventListener("visibilitychange", onVisibility);
@@ -159,7 +166,7 @@ export function ShawarmaScene({
                 key={layer}
               >
                 <img
-                  src="/assets/hero/shawarma-exploded-768.webp"
+                  src={layersSource}
                   alt=""
                   width="768"
                   height="1152"
@@ -217,7 +224,7 @@ export function ShawarmaScene({
             ? [text.bread, text.chicken, text.greens, text.sauce].join("، ")
             : ""}
         </span>
-        {scrollEnabled && (
+        {runway && (
           <div className="shawarma-scroll-cue" aria-hidden="true">
             <ArrowDown size={14} />
             <span>{expanded ? text.close : text.open}</span>

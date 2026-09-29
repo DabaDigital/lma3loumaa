@@ -27,6 +27,7 @@ import {
 import { useTranslation } from "react-i18next";
 import type { FoodImage, Locale } from "./data";
 import { resetFoodBackground, syncFoodBackground } from "./foodBackground";
+import { heroPhoto, heroSizes } from "./heroPhoto";
 
 export function Button({
   children,
@@ -721,7 +722,7 @@ export const foodKinds: FoodImage[] = [
  */
 export const foodImages: Partial<Record<FoodImage, [string, number, number]>> =
   {
-    classic: ["/assets/shawarma_normal.png", 1536, 1024],
+    classic: [heroPhoto, 1536, 1024],
     cheddar: ["cheddar.png", 500, 500],
     jalapeno: ["jalapenos.png", 500, 500],
     cheddarJalapeno: ["cheddar_jalapenos.png", 500, 500],
@@ -800,7 +801,7 @@ export function FoodVisual({
           sizes={
             sizes ??
             (className.includes("hero")
-              ? "(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 600px"
+              ? heroSizes
               : "(max-width: 600px) 100vw, 600px")
           }
           onLoad={(event) => void syncFoodBackground(event.currentTarget)}

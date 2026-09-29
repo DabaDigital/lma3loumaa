@@ -147,50 +147,183 @@ try {
     (await db.query(`select id from menu_items where category='shawarma'`)).rows
       .length > 0,
   );
-  // Social and ordering links: fixed public rows whose URLs only admins edit.
-  const setLink = (id, url) =>
-    db.query(`update site_links set url='${url}' where id='${id}' returning id`);
+  // Links saved before the open-list migration carry over; empty ones go.
+  await db.exec(
+    `reset role; update site_links set url='https://web.facebook.com/shawarma.lma3louma/' where id='facebook'`,
+  );
+  for (const migration of [
+    "20260929090000_open_links_and_social_posts.sql",
+    "20260929120000_four_social_posts.sql",
+  ])
+    await db.exec(
+      readFileSync(
+        new URL(`../supabase/migrations/${migration}`, import.meta.url),
+        "utf8",
+      ),
+    );
+  await as("anon");
+  assert.deepEqual(
+    (
+      await db.query(
+        "select id, kind, platform, sort_order from site_links order by kind, sort_order",
+      )
+    ).rows,
+    [
+      { id: "glovo", kind: "order", platform: "glovo", sort_order: 0 },
+      { id: "instagram", kind: "social", platform: "instagram", sort_order: 0 },
+      { id: "facebook", kind: "social", platform: "facebook", sort_order: 1 },
+    ],
+  );
+  const addLink = (values) =>
+    db.query(
+      `insert into site_links(id, kind, platform, label, url) values (${values}) returning id`,
+    );
+  const tiktok = `'tiktok','social','tiktok','','https://www.tiktok.com/@lma3loumaa'`;
+  await assert.rejects(addLink(tiktok), /permission denied/);
+  await as("authenticated", "00000000-0000-0000-0000-000000000002");
+  await assert.rejects(addLink(tiktok), /row-level security/);
+  await as("authenticated", "00000000-0000-0000-0000-000000000001");
+  assert.equal((await addLink(tiktok)).rows.length, 1);
+  assert.equal(
+    (await addLink(`'kooul','order','other','Kooul','https://kooul.ma/x'`)).rows
+      .length,
+    1,
+  );
+  await assert.rejects(
+    addLink(`'nameless','social','other','','https://example.com'`),
+    /check constraint/,
+  );
+  await assert.rejects(
+    addLink(`'script','social','x','','javascript:alert(1)'`),
+    /check constraint/,
+  );
+  await assert.rejects(
+    addLink(`'kind','shop','x','','https://x.com/a'`),
+    /check constraint/,
+  );
+  assert.equal(
+    (
+      await db.query(
+        `update site_links set available=false where id='tiktok' returning id`,
+      )
+    ).rows.length,
+    1,
+  );
+  await assert.rejects(
+    db.exec(`update site_links set available=false where id='glovo'`),
+    /check constraint/,
+  );
+  await assert.rejects(
+    db.exec(`update site_links set url='' where id='glovo'`),
+    /check constraint/,
+  );
+  await assert.rejects(
+    db.exec(`update site_links set id='renamed' where id='kooul'`),
+    /permission denied/,
+  );
+  assert.equal(
+    (await db.query(`delete from site_links where id='glovo' returning id`)).rows
+      .length,
+    0,
+  );
+  assert.equal(
+    (await db.query(`delete from site_links where id='kooul' returning id`)).rows
+      .length,
+    1,
+  );
   await as("anon");
   assert.deepEqual(
     (await db.query("select id from site_links order by id")).rows.map(
       (r) => r.id,
     ),
-    ["facebook", "glovo", "instagram", "klit"],
+    ["facebook", "glovo", "instagram"],
   );
   await assert.rejects(
-    setLink("instagram", "https://evil.example"),
+    db.exec(`update site_links set url='https://evil.example' where id='instagram'`),
     /permission denied/,
   );
   await as("authenticated", "00000000-0000-0000-0000-000000000002");
   assert.equal(
-    (await setLink("instagram", "https://evil.example")).rows.length,
+    (
+      await db.query(
+        `update site_links set url='https://evil.example' where id='instagram' returning id`,
+      )
+    ).rows.length,
     0,
   );
-  await as("authenticated", "00000000-0000-0000-0000-000000000001");
   assert.equal(
-    (await setLink("instagram", "https://www.instagram.com/lma3louma")).rows
+    (await db.query(`delete from site_links where id='instagram' returning id`))
+      .rows.length,
+    0,
+  );
+
+  // Posts and reels: public when visible, admin-managed, at most four.
+  const addPost = (id, url, video = null) =>
+    db.query(
+      `insert into social_posts(id, url, video) values ('${id}', '${url}', ${video ? `'${video}'` : "null"}) returning id`,
+    );
+  const reel = "https://www.instagram.com/reel/C1abc/";
+  await as("anon");
+  await assert.rejects(addPost("p0", reel), /permission denied/);
+  await as("authenticated", "00000000-0000-0000-0000-000000000002");
+  await assert.rejects(addPost("p0", reel), /row-level security/);
+  await as("authenticated", "00000000-0000-0000-0000-000000000001");
+  for (const url of [
+    "https://www.youtube.com/watch?v=1",
+    "https://www.instagram.com.evil.example/reel/C1abc/",
+    "http://www.instagram.com/reel/C1abc/",
+  ])
+    await assert.rejects(addPost("bad", url), /check constraint/);
+  await assert.rejects(
+    addPost("bad", reel, "javascript:alert(1)"),
+    /check constraint/,
+  );
+  for (let n = 1; n <= 4; n++)
+    await addPost(`p${n}`, `https://www.tiktok.com/@lma3loumaa/video/7400000000000${n}`);
+  await assert.rejects(
+    addPost("p9", "https://www.facebook.com/reel/123"),
+    /limited to 4/,
+  );
+  assert.equal(
+    (
+      await db.query(
+        `update social_posts set available=false where id='p4' returning id`,
+      )
+    ).rows.length,
+    1,
+  );
+  assert.equal(
+    (await db.query(`delete from social_posts where id='p3' returning id`)).rows
       .length,
     1,
   );
-  assert.equal((await setLink("instagram", "")).rows.length, 1);
-  await assert.rejects(
-    setLink("facebook", "javascript:alert(1)"),
-    /check constraint/,
+  assert.equal(
+    (
+      await addPost(
+        "p9",
+        "https://web.facebook.com/reel/123",
+        "https://project.supabase.co/storage/v1/object/public/social-media/posts/a.mp4",
+      )
+    ).rows.length,
+    1,
   );
-  await assert.rejects(setLink("klit", "https://a b"), /check constraint/);
-  await assert.rejects(setLink("glovo", ""), /check constraint/);
+  await as("anon");
+  assert.deepEqual(
+    (await db.query("select id from social_posts order by id")).rows.map(
+      (r) => r.id,
+    ),
+    ["p1", "p2", "p9"],
+  );
   await assert.rejects(
-    db.exec(`update site_links set id='tiktok' where id='klit'`),
+    db.exec(`update social_posts set caption='x'`),
     /permission denied/,
   );
-  await assert.rejects(
-    db.exec(`insert into site_links(id,url) values ('tiktok','')`),
-    /permission denied/,
+  await as("authenticated", "00000000-0000-0000-0000-000000000002");
+  assert.equal(
+    (await db.query(`delete from social_posts returning id`)).rows.length,
+    0,
   );
-  await assert.rejects(
-    db.exec(`delete from site_links where id='klit'`),
-    /permission denied/,
-  );
+  await as("authenticated", "00000000-0000-0000-0000-000000000001");
   await db.exec("reset role; delete from admin_users");
   await as("authenticated", "00000000-0000-0000-0000-000000000001");
   assert.equal(
@@ -199,11 +332,19 @@ try {
     0,
   );
   assert.equal(
-    (await setLink("klit", "https://app.klit.ma/restaurants/x")).rows.length,
+    (
+      await db.query(
+        `update site_links set url='https://evil.example' where id='instagram' returning id`,
+      )
+    ).rows.length,
+    0,
+  );
+  assert.equal(
+    (await db.query(`delete from social_posts returning id`)).rows.length,
     0,
   );
   console.log(
-    "PASS: migration, seed, admin CRUD, anonymous/non-admin denial, no self-promotion, validation, category restrictions, publication filtering, site link permissions and validation, and immediate admin revocation.",
+    "PASS: migration, seed, admin CRUD, anonymous/non-admin denial, no self-promotion, validation, category restrictions, publication filtering, open link list migration and permissions, 4-post limit, and immediate admin revocation.",
   );
 } finally {
   await db.close();

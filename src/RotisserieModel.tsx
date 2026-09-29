@@ -275,6 +275,10 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     photo = useRef<HTMLImageElement>(null);
   const [renderer, setRenderer] = useState("image");
   const [missing, setMissing] = useState(false);
+  // A small decoration behind the sandwich: it downloads once the app runs,
+  // after the prerendered page has painted, rather than alongside it.
+  const [source, setSource] = useState<string>();
+  useEffect(() => setSource("/assets/hero/rotisserie-cutout.webp"), []);
   useEffect(() => {
     const element = canvas.current,
       image = photo.current;
@@ -285,7 +289,9 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     }
     let instance: Renderer | null = null,
       pending = 0,
-      visible = true;
+      visible = true,
+      building: (() => void) | null = null,
+      disposed = false;
     const draw = () => {
       pending = 0;
       if (visible && !document.hidden)
@@ -294,12 +300,31 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     const requestDraw = () => {
       if (!pending) pending = requestAnimationFrame(draw);
     };
+    // At rest the model matches the cutout already on screen, so it is built
+    // when the page is idle, from a photo decoded off the main thread, rather
+    // than competing with the page load.
+    const build = () => {
+      building = null;
+      void image
+        .decode()
+        .catch(() => {})
+        .then(() => {
+          if (disposed || instance || !image.naturalWidth) return;
+          instance = createRenderer(element, image);
+          if (instance) {
+            draw();
+            setRenderer("webgl");
+          }
+        });
+    };
     const load = () => {
-      if (!image.naturalWidth || instance) return;
-      instance = createRenderer(element, image);
-      if (instance) {
-        draw();
-        setRenderer("webgl");
+      if (!image.naturalWidth || instance || building) return;
+      if (typeof requestIdleCallback === "function") {
+        const id = requestIdleCallback(build, { timeout: 2000 });
+        building = () => cancelIdleCallback(id);
+      } else {
+        const id = setTimeout(build, 200);
+        building = () => clearTimeout(id);
       }
     };
     // A lost context uses the same transparent cutout instead of a blank canvas.
@@ -329,6 +354,8 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     visibility.observe(element);
     document.addEventListener("visibilitychange", requestDraw);
     return () => {
+      disposed = true;
+      building?.();
       cancelAnimationFrame(pending);
       changes.disconnect();
       size.disconnect();
@@ -348,7 +375,7 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     >
       <img
         ref={photo}
-        src="/assets/hero/rotisserie-cutout.webp"
+        src={source}
         alt=""
         loading="lazy"
         decoding="async"

@@ -120,6 +120,31 @@ test.describe("phone scroll reveal", () => {
   }
 });
 
+test.describe("runway before the artwork", () => {
+  test.use({ hasTouch: true, isMobile: true });
+  test("is reserved at first paint, so the page does not jump when the layers arrive", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    let release = () => {};
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route("**/hero/shawarma-exploded-768.webp", async (route) => {
+      await held;
+      await route.continue();
+    });
+    await page.goto("/");
+    const story = page.locator(".hero-story");
+    await expect(story).toHaveAttribute("data-scroll-runway", "true");
+    await expect(story).toHaveAttribute("data-scroll-enabled", "false");
+    await page.evaluate(() => document.fonts.ready);
+    const text = page.locator(".hero-text");
+    const before = (await text.boundingBox())!.y;
+    release();
+    await expect(story).toHaveAttribute("data-scroll-enabled", "true");
+    expect(Math.abs((await text.boundingBox())!.y - before)).toBeLessThan(1);
+  });
+});
+
 test("reduced motion bypasses the scroll runway", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");

@@ -3318,3 +3318,53 @@ html[data-motion="off"] .reveal {
     bottom: 0;
   }
 }
+
+/* Sections below the menu are laid out and painted only as they near the
+   screen, so loading, font swaps and the menu's arrival do not reflow them.
+   The sizes are their usual heights; `auto` keeps the real one once shown. */
+.family-section,
+.reviews-section,
+.social-section,
+.locations-section,
+.delivery-section,
+footer {
+  content-visibility: auto;
+}
+.family-section {
+  contain-intrinsic-size: auto 451px;
+}
+.reviews-section {
+  contain-intrinsic-size: auto 1155px;
+}
+.social-section {
+  contain-intrinsic-size: auto 1121px;
+}
+.locations-section {
+  contain-intrinsic-size: auto 883px;
+}
+.delivery-section {
+  contain-intrinsic-size: auto 272px;
+}
+footer {
+  contain-intrinsic-size: auto 334px;
+}
+@media (max-width: 650px) {
+  .family-section {
+    contain-intrinsic-size: auto 682px;
+  }
+  .reviews-section {
+    contain-intrinsic-size: auto 1900px;
+  }
+  .social-section {
+    contain-intrinsic-size: auto 2800px;
+  }
+  .locations-section {
+    contain-intrinsic-size: auto 1100px;
+  }
+  .delivery-section {
+    contain-intrinsic-size: auto 367px;
+  }
+  footer {
+    contain-intrinsic-size: auto 544px;
+  }
+}

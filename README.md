@@ -68,7 +68,7 @@ In development, `vite.config.ts` mounts the same review handler as local middlew
 **Accessibility and performance**
 - Native modal dialogs with keyboard dismissal and focus restoration.
 - Reduced-motion support, manual animation control, and animations paused while off-screen.
-- Self-hosted WOFF2 fonts, responsive WebP image variants, content-hashed immutable caching. No analytics or tracking cookies.
+- Self-hosted WOFF2 fonts, responsive WebP image variants, content-hashed immutable caching. No analytics or tracking cookies of its own. Posts added to the follow-us section load Instagram's, Facebook's or TikTok's official players when they come into view, and those providers may set their own cookies.
 - Reusable Button, Input, SelectInput, Dropdown, DatePicker and Toggle components in `src/components.tsx`.
 
 See [performance notes](docs/performance.md) for measurements, the chunk-splitting setup and the asset regeneration workflow.

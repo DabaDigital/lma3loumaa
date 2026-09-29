@@ -1,25 +1,46 @@
-/* Native sticky sections hold the composition while scroll distance opens the layers. */
+/* Native sticky sections hold the composition while scroll distance opens the
+   layers. CSS lays the runway out, so it is already in the first paint of the
+   prerendered page. The scroll hook measures the pin and turns the runway off
+   (data-scroll-runway="false") when motion is off or the artwork fails. */
+@property --hero-travel {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
 .hero-story {
   --reveal: 0;
+  /* The header's height (styles.css: .header-inner plus its 1px border). */
+  --header-height: 87px;
   position: relative;
   background: #073d46;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero-story:not([data-scroll-runway="false"]) {
+    --hero-travel: clamp(550px, 90vh, 1000px);
+  }
 }
 .hero-art-track {
   grid-area: art;
   min-width: 0;
 }
-.hero-story[data-scroll-enabled="true"][data-scroll-layout="desktop"] {
-  height: calc(var(--hero-height) + var(--hero-travel));
+@media (min-width: 651px) {
+  .hero-story .hero-grid {
+    flex: 1;
+  }
 }
-.hero-story[data-scroll-enabled="true"][data-scroll-layout="desktop"] > .hero {
-  position: sticky;
-  top: var(--story-pin-top);
-  min-height: var(--hero-viewport-height);
-  display: flex;
-  flex-direction: column;
-}
-.hero-story[data-scroll-layout="desktop"] .hero-grid {
-  flex: 1;
+@media (min-width: 651px) and (prefers-reduced-motion: no-preference) {
+  .hero-story:not([data-scroll-runway="false"])::after {
+    content: "";
+    display: block;
+    height: var(--hero-travel);
+  }
+  .hero-story:not([data-scroll-runway="false"]) > .hero {
+    position: sticky;
+    top: var(--story-pin-top, var(--header-height));
+    min-height: calc(100vh - var(--header-height));
+    display: flex;
+    flex-direction: column;
+  }
 }
 .shawarma-scroll-cue {
   position: relative;
@@ -51,19 +72,28 @@
 .shawarma-scroll-cue[dir="rtl"] .shawarma-scroll-meter i {
   transform-origin: right;
 }
-@media (max-width: 650px) {
-  .hero-story[data-scroll-enabled="true"] > .hero {
+@media (max-width: 650px) and (prefers-reduced-motion: no-preference) {
+  .hero-story:not([data-scroll-runway="false"]) > .hero {
     overflow: clip;
   }
-  .hero-story[data-scroll-enabled="true"] .hero-art-track {
-    height: calc(var(--art-height) + var(--hero-travel));
+  .hero-story:not([data-scroll-runway="false"]) .hero-art-track {
     margin-block: 18px 44px;
     align-self: stretch;
   }
-  .hero-story[data-scroll-enabled="true"] .hero-art-track > .hero-art {
+  .hero-story:not([data-scroll-runway="false"]) .hero-art-track::after {
+    content: "";
+    display: block;
+    height: var(--hero-travel);
+  }
+  .hero-story:not([data-scroll-runway="false"]) .hero-art-track > .hero-art {
     position: sticky;
-    top: var(--story-pin-top);
+    top: var(--story-pin-top, calc(var(--header-height) + 12px));
     margin: 0 auto;
+  }
+}
+@media (max-width: 650px) {
+  .hero-story {
+    --header-height: 71px;
   }
   .shawarma-scroll-cue {
     font-size: 9px;

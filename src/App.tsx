@@ -34,8 +34,14 @@ import {
   ExternalLink,
 } from "./components";
 import { categories as initialCategories } from "./data";
-import { linkIds, usePublicContent } from "./content";
-import { orderUrl, platforms } from "./links";
+import { usePublicContent } from "./content";
+import {
+  extraOrderLinks,
+  linkName,
+  orderUrl,
+  platformOf,
+  socialLinks,
+} from "./links";
 import type { Item, Locale } from "./data";
 import { makeVisitCalendar } from "./calendar";
 import { Reviews } from "./ReviewSection";
@@ -62,10 +68,10 @@ function Brand({ footer = false }: { footer?: boolean }) {
 
 export default function App() {
   const content = usePublicContent();
-  const { items, locations, links } = content;
-  const socials = linkIds.filter(
-    (id) => platforms[id].kind === "social" && links[id],
-  );
+  const { items, locations, links, posts } = content;
+  const socials = socialLinks(links);
+  // Ordering platforms besides Glovo, e.g. Klit, shown as extra buttons.
+  const moreOrders = extraOrderLinks(links);
   const categories = [initialCategories[0], ...content.categories];
   const familyItem = items.find((i) => i.id === "family");
   const { t, i18n } = useTranslation();
@@ -130,7 +136,7 @@ export default function App() {
     );
     document.querySelectorAll(".reveal").forEach((e) => observer.observe(e));
     return () => observer.disconnect();
-  }, [content.loading, items.length, locations.length, pathname, links]);
+  }, [content.loading, items.length, locations.length, pathname, links, posts]);
   useEffect(() => {
     if (
       category !== "all" &&
@@ -409,7 +415,12 @@ export default function App() {
             )}
             <Reviews />
             {!content.loading && (
-              <SocialSection links={links} locale={locale} />
+              <SocialSection
+                links={links}
+                posts={posts}
+                locale={locale}
+                motion={motion}
+              />
             )}
             <section className="locations-section" id="locations">
               <div className="container section">
@@ -486,11 +497,15 @@ export default function App() {
                   {t("orderGlovo")}
                   <ArrowUpRight size={18} />
                 </Button>
-                {links.klit && (
-                  <ExternalLink href={links.klit} className="button--secondary">
-                    {t("orderKlit")}
+                {moreOrders.map((link) => (
+                  <ExternalLink
+                    key={link.id}
+                    href={link.url}
+                    className="button--secondary"
+                  >
+                    {t("orderOn", { platform: linkName(link) })}
                   </ExternalLink>
-                )}
+                ))}
                 <p>{t("deliveryNote")}</p>
               </div>
             </section>
@@ -506,16 +521,16 @@ export default function App() {
               <div className="footer-social">
                 <span>{t("followUs")}</span>
                 <div>
-                  {socials.map((id) => {
-                    const { name, Icon } = platforms[id];
+                  {socials.map((link) => {
+                    const { Icon } = platformOf(link.platform);
                     return (
                       <a
-                        key={id}
-                        href={links[id]}
+                        key={link.id}
+                        href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        aria-label={name}
-                        title={name}
+                        aria-label={linkName(link)}
+                        title={linkName(link)}
                       >
                         <Icon size={17} />
                       </a>
@@ -550,12 +565,17 @@ export default function App() {
               {t("orderGlovo")}
               <ArrowUpRight size={12} />
             </button>
-            {links.klit && (
-              <a href={links.klit} target="_blank" rel="noopener noreferrer">
-                {t("orderKlit")}
+            {moreOrders.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("orderOn", { platform: linkName(link) })}
                 <ArrowUpRight size={12} />
               </a>
-            )}
+            ))}
           </div>
           <div className="footer-tagline">
             <span lang="ar" dir="rtl">
@@ -620,14 +640,15 @@ export default function App() {
             >
               {t("glovoOpen")}
             </ExternalLink>
-            {links.klit && (
+            {moreOrders.map((link) => (
               <ExternalLink
-                href={links.klit}
+                key={link.id}
+                href={link.url}
                 className="button--secondary full-width"
               >
-                {t("orderKlit")}
+                {t("orderOn", { platform: linkName(link) })}
               </ExternalLink>
-            )}
+            ))}
             <p className="small-note">{t("deliveryNote")}</p>
           </div>
         </Modal>

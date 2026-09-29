@@ -94,10 +94,14 @@ function subscribe(listener: () => void) {
   };
 }
 
+const currentLocation = () => location.pathname + location.search;
+
 export function useLocation() {
+  // The prerendered home page and its hydration read the same address.
   const path = useSyncExternalStore(
     subscribe,
-    () => location.pathname + location.search,
+    currentLocation,
+    currentLocation,
   );
   return useMemo(() => new URL(path, location.origin), [path]);
 }

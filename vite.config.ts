@@ -1,6 +1,10 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import { createReviewHandler } from "./api/reviews.js";
+import imageAssets from "./src/imageAssets.json" with { type: "json" };
+import { heroPhoto, heroSizes } from "./src/heroPhoto.ts";
+
+const hero = (imageAssets as Record<string, { srcSet: string }>)[heroPhoto];
 
 export default defineConfig(({ mode }) => ({
   build: {
@@ -31,6 +35,53 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     react(),
+    {
+      // The built index.html carries the Arabic home page, rendered at build
+      // time (scripts/prerender.mjs). Other pages, a saved French or English
+      // choice and reduced motion render differently, so this hides it for
+      // them and src/main.tsx renders afresh. The hero photo downloads from
+      // the start on the home page, even when React has to request it later.
+      name: "prerendered-home",
+      transformIndexHtml() {
+        const preload = hero
+          ? `
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.fetchPriority = "high";
+    link.imageSrcset = ${JSON.stringify(hero.srcSet)};
+    link.imageSizes = ${JSON.stringify(heroSizes)};
+    document.head.append(link);`
+          : "";
+        return [
+          {
+            tag: "style",
+            injectTo: "head",
+            children: 'html[data-render="client"] #root > * { display: none; }',
+          },
+          {
+            tag: "script",
+            injectTo: "head",
+            children: `(() => {
+  let language = null;
+  try {
+    language = localStorage.getItem("lma-language");
+  } catch {}
+  const home = location.pathname === "/";
+  if (
+    !home ||
+    language === "fr" ||
+    language === "en" ||
+    matchMedia("(prefers-reduced-motion: reduce)").matches
+  )
+    document.documentElement.dataset.render = "client";
+  if (home) {${preload}
+  }
+})();`,
+          },
+        ];
+      },
+    },
     {
       name: "local-review-api",
       configureServer(server) {

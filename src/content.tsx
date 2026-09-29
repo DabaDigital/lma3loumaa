@@ -31,23 +31,81 @@ export type Content = {
   items: MenuItem[];
   locations: Location[];
 };
-export const linkIds = ["instagram", "facebook", "glovo", "klit"] as const;
-export type LinkId = (typeof linkIds)[number];
-// Only platforms with a URL are present.
-export type Links = Partial<Record<LinkId, string>>;
+export type LinkKind = "social" | "order";
+/** A social profile or ordering platform, managed in the dashboard. */
+export type SiteLink = {
+  id: string;
+  kind: LinkKind;
+  /** A key from the platform catalog in links.tsx, or "other". */
+  platform: string;
+  /** Display name; only used for "other" platforms. */
+  label: string;
+  url: string;
+  available: boolean;
+  sort_order: number;
+};
+/** A post or reel shown in the follow-us carousel. */
+export type SocialPost = {
+  id: string;
+  url: string;
+  video: string | null;
+  poster: string | null;
+  caption: string;
+  available: boolean;
+  sort_order: number;
+};
 // What visitors see until the dashboard's links are read (or without a
 // database). Glovo's locale-aware default lives in links.tsx.
-const defaultLinks: Links = { instagram: instagramUrl };
-function readLinks(rows: { id: string; url: string }[]): Links {
-  return Object.fromEntries(
-    rows
-      .filter(
-        (row) =>
-          linkIds.includes(row.id as LinkId) && /^https:\/\//.test(row.url),
-      )
-      .map((row) => [row.id, row.url]),
-  );
+const defaultLinks: SiteLink[] = [
+  {
+    id: "instagram",
+    kind: "social",
+    platform: "instagram",
+    label: "",
+    url: instagramUrl,
+    available: true,
+    sort_order: 0,
+  },
+];
+const bySortOrder = <T extends { sort_order: number; id: string }>(
+  a: T,
+  b: T,
+) => a.sort_order - b.sort_order || a.id.localeCompare(b.id);
+// Also reads rows from before the open-links migration, which only had an id
+// (the platform) and a URL, empty when not shown.
+function readLinks(rows: Partial<SiteLink>[]): SiteLink[] {
+  return rows
+    .filter((row) => row.id && /^https:\/\/\S+$/.test(row.url ?? ""))
+    .map((row, index) => {
+      const platform = row.platform ?? row.id!;
+      return {
+        id: row.id!,
+        kind:
+          row.kind ??
+          (platform === "glovo" || platform === "klit" ? "order" : "social"),
+        platform,
+        label: row.label ?? "",
+        url: row.url!,
+        available: row.available ?? true,
+        sort_order: row.sort_order ?? index,
+      };
+    })
+    .sort(bySortOrder);
 }
+// Reads a table that may not exist yet without failing the menu request:
+// null means "could not be read".
+const readOptional = <T,>(table: string, read: (rows: any[]) => T) =>
+  supabase!
+    .from(table)
+    .select("*")
+    .then(
+      ({ data: rows, error: failure }) =>
+        failure || !rows ? null : read(rows),
+      () => null,
+    );
+// Keeps the previous reference when a poll returns identical data.
+const same = <T,>(previous: T, next: T) =>
+  JSON.stringify(previous) === JSON.stringify(next) ? previous : next;
 const defaults: Content = {
   categories: categories
     .filter((c) => c.id !== "all")
@@ -63,8 +121,11 @@ const empty: Content = { categories: [], items: [], locations: [] };
 const Context = createContext<
   Content & {
     /** Null until the links table has been read successfully. */
-    links: Links | null;
+    links: SiteLink[] | null;
     linksError: boolean;
+    /** Null until the posts table has been read successfully. */
+    posts: SocialPost[] | null;
+    postsError: boolean;
     loading: boolean;
     error: boolean;
     refresh: () => Promise<void>;
@@ -73,14 +134,18 @@ const Context = createContext<
   ...empty,
   links: null,
   linksError: false,
+  posts: null,
+  postsError: false,
   loading: true,
   error: false,
   refresh: async () => {},
 });
 export function ContentProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState(supabase ? empty : defaults);
-  const [links, setLinks] = useState<Links | null>(null);
+  const [links, setLinks] = useState<SiteLink[] | null>(null);
   const [linksError, setLinksError] = useState(false);
+  const [posts, setPosts] = useState<SocialPost[] | null>(null);
+  const [postsError, setPostsError] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
   const [error, setError] = useState(false);
   const request = useRef(0);
@@ -88,28 +153,25 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const version = ++request.current;
     try {
-      const [results, nextLinks] = await Promise.all([
+      const [results, nextLinks, nextPosts] = await Promise.all([
         Promise.all(
           ["categories", "menu_items", "locations"].map((table) =>
             supabase!.from(table).select("*").order("sort_order").order("id"),
           ),
         ),
-        // Links live in their own table. Failing to read them (for example
-        // before their migration is applied) must not take the menu down.
-        supabase.from("site_links").select("id,url").then(
-          ({ data: rows, error: failure }) =>
-            failure || !rows ? null : readLinks(rows),
-          () => null,
+        // Links and posts live in their own tables. Failing to read them (for
+        // example before their migration is applied) must not take the menu
+        // down. Sorted here: older link tables have no sort_order column.
+        readOptional("site_links", readLinks),
+        readOptional("social_posts", (rows: SocialPost[]) =>
+          [...rows].sort(bySortOrder),
         ),
       ]);
       if (version !== request.current) return;
-      if (nextLinks)
-        setLinks((previous) =>
-          JSON.stringify(previous) === JSON.stringify(nextLinks)
-            ? previous
-            : nextLinks,
-        );
+      if (nextLinks) setLinks((previous) => same(previous, nextLinks));
       setLinksError(!nextLinks);
+      if (nextPosts) setPosts((previous) => same(previous, nextPosts));
+      setPostsError(!nextPosts);
       if (results.some((r) => r.error)) throw new Error("content unavailable");
       const next = {
         categories: results[0].data as Category[],
@@ -179,8 +241,17 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
   const value = useMemo(
-    () => ({ ...data, links, linksError, loading, error, refresh }),
-    [data, links, linksError, loading, error, refresh],
+    () => ({
+      ...data,
+      links,
+      linksError,
+      posts,
+      postsError,
+      loading,
+      error,
+      refresh,
+    }),
+    [data, links, linksError, posts, postsError, loading, error, refresh],
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
@@ -197,7 +268,9 @@ export function usePublicContent() {
         (i) => i.available && availableCategories.has(i.category),
       ),
       locations: content.locations.filter((l) => l.available),
-      links: content.links ?? defaultLinks,
+      // The admin's session also reads hidden rows; visitors never see them.
+      links: (content.links ?? defaultLinks).filter((l) => l.available),
+      posts: (content.posts ?? []).filter((p) => p.available),
     };
   }, [content]);
 }

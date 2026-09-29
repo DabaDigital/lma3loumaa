@@ -308,8 +308,9 @@
   z-index: 2;
   width: 113px;
   height: 113px;
-  background: url("/assets/menu-showcase/gold-price-seal.png") center / contain
-    no-repeat;
+  /* 256px covers the 113px seal at 2x; the 1254px PNG source weighed 811 KB. */
+  background: url("/assets/menu-showcase/gold-price-seal-256.webp") center /
+    contain no-repeat;
   display: flex;
   flex-direction: column;
   justify-content: center;

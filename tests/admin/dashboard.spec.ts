@@ -19,12 +19,19 @@ async function backend(page: Page, admin = true) {
       available: true,
       sort_order: i,
     })),
+    // Social links and posts are covered in social.spec.ts.
     site_links: [
-      { id: "instagram", url: "" },
-      { id: "facebook", url: "" },
-      { id: "glovo", url: GLOVO },
-      { id: "klit", url: "" },
+      {
+        id: "glovo",
+        kind: "order",
+        platform: "glovo",
+        label: "",
+        url: GLOVO,
+        available: true,
+        sort_order: 0,
+      },
     ],
+    social_posts: [],
   };
   const user = {
     id: "00000000-0000-0000-0000-000000000001",
@@ -223,89 +230,6 @@ test("admin sign-in, category/menu/location CRUD, filtering and website sync", a
   await expect(
     page.getByRole("button", { name: "Se connecter", exact: true }),
   ).toBeVisible();
-});
-test("social and ordering links are edited in the dashboard and shown on the website", async ({
-  page,
-}) => {
-  const data = await backend(page);
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  const instagram = "https://www.instagram.com/lma3louma";
-  const klit = "https://app.klit.ma/restaurants/lma3louma";
-  const glovo = `${GLOVO}-test`;
-  const link = (id: string) => data.site_links.find((l) => l.id === id).url;
-  await login(page);
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Réseaux & liens/ })
-    .click();
-  await expect(page).toHaveURL(/\/admin\/links$/);
-  await expect(page.getByLabel("Glovo", { exact: true })).toHaveValue(GLOVO);
-  await page.getByLabel("Instagram", { exact: true }).fill(instagram);
-  await page.getByLabel("Klit", { exact: true }).fill(klit);
-  await page.getByLabel("Glovo", { exact: true }).fill(glovo);
-  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
-  await expect(page.locator(".admin-notice")).toHaveText(
-    "Modifications enregistrées.",
-  );
-  expect([link("instagram"), link("facebook"), link("glovo"), link("klit")]).toEqual(
-    [instagram, "", glovo, klit],
-  );
-  await expect(
-    page.getByRole("link", { name: "Ouvrir le lien · Instagram" }),
-  ).toHaveAttribute("href", instagram);
-  // Browser validation keeps malformed or missing required URLs out.
-  const facebook = page.getByLabel("Facebook", { exact: true });
-  await facebook.fill("facebook.com/lma3louma");
-  await page.getByLabel("Glovo", { exact: true }).fill("");
-  await page.getByRole("button", { name: "Enregistrer", exact: true }).click();
-  expect(
-    await facebook.evaluate((el: HTMLInputElement) => el.checkValidity()),
-  ).toBe(false);
-  expect([link("facebook"), link("glovo")]).toEqual(["", glovo]);
-
-  await page.goto("/");
-  const footer = page.locator("footer");
-  await expect(footer.getByRole("link", { name: "Instagram" })).toHaveAttribute(
-    "href",
-    instagram,
-  );
-  await expect(footer.getByRole("link", { name: "Facebook" })).toHaveCount(0);
-  // The follow-us section shows the saved profile and its handle.
-  const profile = page.locator(".social-section .social-profile");
-  await expect(profile).toHaveCount(1);
-  await expect(profile).toHaveAttribute("href", instagram);
-  await expect(profile).toContainText("@lma3louma");
-  const delivery = page.locator(".delivery-section");
-  await expect(
-    delivery.getByRole("link", { name: "Commander sur Klit" }),
-  ).toHaveAttribute("href", klit);
-  await delivery.getByRole("button", { name: "Commander sur Glovo" }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(
-    dialog.getByRole("link", { name: "Continuer sur Glovo" }),
-  ).toHaveAttribute("href", glovo);
-  await expect(
-    dialog.getByRole("link", { name: "Commander sur Klit" }),
-  ).toHaveAttribute("href", klit);
-
-  // An unreadable links table leaves the menu intact, and Glovo and Instagram
-  // on their built-in defaults.
-  await page.route("**/rest/v1/site_links*", (route) =>
-    route.fulfill({ status: 404, json: { message: "missing" } }),
-  );
-  await page.goto("/");
-  await expect(page.locator(".location-card")).toHaveCount(2);
-  await expect(page.locator(".content-status")).toHaveCount(0);
-  await expect(
-    page.locator("footer").getByRole("link", { name: "Instagram" }),
-  ).toHaveAttribute("href", "https://www.instagram.com/lma3loumaa/");
-  await expect(page.locator(".social-section .social-profile")).toHaveCount(1);
-  await page.locator(".delivery-section").getByRole("button").click();
-  await expect(
-    page.getByRole("dialog").getByRole("link", { name: "Continuer sur Glovo" }),
-  ).toHaveAttribute("href", GLOVO);
-  expect(errors).toEqual([]);
 });
 test("non-admin users cannot open dashboard", async ({ page }) => {
   await backend(page, false);
