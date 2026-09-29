@@ -262,7 +262,9 @@
   height: var(--food-height);
   animation: none;
   filter: none;
-  opacity: clamp(0, calc(1 - var(--reveal, 0) * 50), 1);
+  /* The photo and the collapsed layers swap on the first scroll step (--reveal has four
+     decimals) instead of cross-fading: two translucent copies read as a blur. */
+  opacity: clamp(0, calc(1 - var(--reveal, 0) * 10000), 1);
   scale: calc(1 - var(--reveal, 0) * 0.18);
 }
 /* Collapsed, the stack is measured against the contained 3:2 photo (width limited on narrow
@@ -291,7 +293,7 @@
   transform-origin: 50% 55%;
   /* Composite clipped ingredients together to avoid nested 3D clipping on mobile. */
   transform-style: flat;
-  opacity: clamp(0, calc(var(--reveal, 0) * 50), 1);
+  opacity: clamp(0, calc(var(--reveal, 0) * 10000), 1);
   pointer-events: none;
 }
 /* Closed, the layers are transparent anyway. Hidden as well, the page load
@@ -310,47 +312,66 @@
   height: 100%;
   object-fit: contain;
 }
-/* The flat group ignores translateZ, so z-index keeps upper ingredients over lower ones. */
+/* The flat group ignores translateZ, so z-index keeps upper ingredients over lower ones.
+   Each band cuts through an empty gap of the exploded photo; open, the layers settle at
+   scale 1 with a slight tilt. The closed photo (shawarma_normal.png) is this stack
+   rendered at reveal 0, so the swap is invisible: changing the collapsed offsets or
+   scales below means re-rendering that photo. */
 .shawarma-layer--bread {
   z-index: 4;
-  clip-path: inset(0 0 70%);
+  clip-path: inset(0 0 71%);
   transform: translate3d(
-      calc(2% - var(--reveal, 0) * 5%),
-      calc(19% - var(--reveal, 0) * 20%),
+      calc(3.9% - var(--reveal, 0) * 6.9%),
+      calc(17.95% - var(--reveal, 0) * 18.95%),
       calc(20px + var(--reveal, 0) * 15px)
     )
-    rotate(calc(-2deg - var(--reveal, 0) * 3deg));
+    rotate(calc(var(--reveal, 0) * -5deg))
+    scale(
+      calc(1.008 - var(--reveal, 0) * 0.008),
+      calc(0.973 + var(--reveal, 0) * 0.027)
+    );
 }
 .shawarma-layer--chicken {
   z-index: 3;
-  clip-path: inset(30% 0 42.5%);
+  clip-path: inset(29% 0 43.5%);
   transform: translate3d(
-      calc(var(--reveal, 0) * 3%),
-      calc(7% - var(--reveal, 0) * 7%),
+      calc(0.65% + var(--reveal, 0) * 2.35%),
+      calc(6.36% - var(--reveal, 0) * 6.36%),
       calc(40px + var(--reveal, 0) * 20px)
     )
-    rotate(calc(var(--reveal, 0) * 4deg));
+    rotate(calc(var(--reveal, 0) * 4deg))
+    scale(
+      calc(1.099 - var(--reveal, 0) * 0.099),
+      calc(1.095 - var(--reveal, 0) * 0.095)
+    );
 }
 .shawarma-layer--greens {
   z-index: 2;
-  clip-path: inset(57.5% 0 23.5%);
+  clip-path: inset(56.5% 0 24%);
   transform: translate3d(
-      calc(-1% - var(--reveal, 0) * 2%),
-      calc(-8% + var(--reveal, 0) * 9%),
+      calc(4.08% - var(--reveal, 0) * 7.08%),
+      calc(-9.17% + var(--reveal, 0) * 10.17%),
       calc(55px + var(--reveal, 0) * 20px)
     )
-    rotate(calc(-2deg - var(--reveal, 0) * 2deg))
-    scale(calc(1.1 - var(--reveal, 0) * 0.1), 1);
+    rotate(calc(var(--reveal, 0) * -4deg))
+    scale(
+      calc(1.116 - var(--reveal, 0) * 0.116),
+      calc(1.063 - var(--reveal, 0) * 0.063)
+    );
 }
 .shawarma-layer--sauce {
   z-index: 1;
-  clip-path: inset(76.5% 0 0);
+  clip-path: inset(76% 0 0);
   transform: translate3d(
-      calc(var(--reveal, 0) * 2%),
-      calc(-26% + var(--reveal, 0) * 28%),
+      calc(2.11% - var(--reveal, 0) * 0.11%),
+      calc(-27.56% + var(--reveal, 0) * 29.56%),
       calc(15px + var(--reveal, 0) * 10px)
     )
-    rotate(calc(var(--reveal, 0) * 3deg));
+    rotate(calc(var(--reveal, 0) * 3deg))
+    scale(
+      calc(1.095 - var(--reveal, 0) * 0.095),
+      calc(1.05 - var(--reveal, 0) * 0.05)
+    );
 }
 .shawarma-spices {
   position: absolute;

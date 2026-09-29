@@ -12,8 +12,8 @@
     "height": 1536
   },
   "/assets/hero/shawarma-exploded.png": {
-    "src": "/assets/optimized/shawarma-exploded-768-ae138cb4da51.webp",
-    "srcSet": "/assets/optimized/shawarma-exploded-768-ae138cb4da51.webp 768w",
+    "src": "/assets/optimized/shawarma-exploded-768-ae2b446a74dc.webp",
+    "srcSet": "/assets/optimized/shawarma-exploded-768-ae2b446a74dc.webp 768w",
     "width": 1024,
     "height": 1536
   },
@@ -192,8 +192,8 @@
     "height": 1024
   },
   "/assets/shawarma_normal.png": {
-    "src": "/assets/optimized/shawarma-normal-1280-fb138e9e0792.webp",
-    "srcSet": "/assets/optimized/shawarma-normal-320-d799822668c1.webp 320w, /assets/optimized/shawarma-normal-384-e7e7633e2c9c.webp 384w, /assets/optimized/shawarma-normal-512-1f5ec8cd5a0c.webp 512w, /assets/optimized/shawarma-normal-768-90d992c306b0.webp 768w, /assets/optimized/shawarma-normal-1280-fb138e9e0792.webp 1280w",
+    "src": "/assets/optimized/shawarma-normal-1280-e78f50f91803.webp",
+    "srcSet": "/assets/optimized/shawarma-normal-320-343b4020225d.webp 320w, /assets/optimized/shawarma-normal-384-fcf6de3b946e.webp 384w, /assets/optimized/shawarma-normal-512-0e3e5fad0d15.webp 512w, /assets/optimized/shawarma-normal-768-a289c013eb83.webp 768w, /assets/optimized/shawarma-normal-1280-e78f50f91803.webp 1280w",
     "width": 1536,
     "height": 1024
   }
