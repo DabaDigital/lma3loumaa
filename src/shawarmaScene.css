@@ -294,6 +294,12 @@
   opacity: clamp(0, calc(var(--reveal, 0) * 50), 1);
   pointer-events: none;
 }
+/* Closed, the layers are transparent anyway. Hidden as well, the page load
+   never paints the large reveal file (useShawarmaScroll sets the progress). */
+.shawarma-scene:not([data-progress]) .shawarma-layers,
+.shawarma-scene[data-progress="0.0000"] .shawarma-layers {
+  visibility: hidden;
+}
 .shawarma-layer {
   position: absolute;
   inset: 0;

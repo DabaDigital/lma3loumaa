@@ -471,6 +471,9 @@ export default function App() {
                               className="button--secondary"
                             >
                               {t("directions")}
+                              <span className="sr-only">
+                                : {loc.name[locale]}
+                              </span>
                             </ExternalLink>
                             <button
                               className="text-button"

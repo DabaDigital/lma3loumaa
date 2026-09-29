@@ -130,15 +130,20 @@ function MezzeVisual({ item }: { item: Item }) {
   );
 }
 
+// Drawn widths in the carousel frame, which is 275, 330 or 365px tall by
+// breakpoint (menuShowcase.css): a square dish photo is as wide as the frame
+// is tall; the wide signature photo is held back by the frame's width first.
+const dishSizes = "(max-width: 600px) 275px, (max-width: 900px) 330px, 365px";
+const signatureSizes =
+  "(max-width: 391px) 92vw, (max-width: 600px) 360px, (max-width: 900px) 495px, 530px";
+
 /** Use the clean signature photo while leaving uploaded product art untouched. */
 function ShowcaseVisual({
   item,
   className = "",
-  sizes,
 }: {
   item: Item;
   className?: string;
-  sizes: string;
 }) {
   if (
     item.image === "classic" ||
@@ -152,13 +157,15 @@ function ShowcaseVisual({
           alt=""
           width={1536}
           height={1024}
-          sizes={sizes}
+          sizes={signatureSizes}
           loading="lazy"
           draggable={false}
         />
       </div>
     );
-  return <FoodVisual kind={item.image} className={className} sizes={sizes} />;
+  return (
+    <FoodVisual kind={item.image} className={className} sizes={dishSizes} />
+  );
 }
 
 export function MenuShowcase({
@@ -435,7 +442,6 @@ export function MenuShowcase({
                       <ShowcaseVisual
                         item={item}
                         className="flavor-main-visual"
-                        sizes="(max-width: 700px) 92vw, (max-width: 1100px) 55vw, 560px"
                       />
                       <div className="flavor-price-badge">
                         {item.variants?.length ? (

@@ -40,6 +40,17 @@ try {
   // the hidden home page's photos nor wait behind it for the app.
   await writeFile(`${dir}/app.html`, page);
   page = page.replace(empty, `<div id="root">${body}</div>`);
+  // The home page paints from the HTML, so its stylesheet comes inside it
+  // (about 20 KB compressed) rather than as a request the first paint waits
+  // for. app.html keeps the link: its pages paint once the app has run.
+  const stylesheet = page.match(
+    /<link rel="stylesheet" crossorigin href="(\/assets\/[^"]+\.css)">/,
+  );
+  if (!stylesheet) throw new Error(`${file} has no stylesheet link`);
+  const css = await readFile(`${dir}${stylesheet[1]}`, "utf8");
+  if (/<\/style/i.test(css))
+    throw new Error(`${stylesheet[1]} closes a style tag`);
+  page = page.replace(stylesheet[0], () => `<style>${css}</style>`);
   // The page is already in the HTML, so the app need not compete with it: its
   // files start downloading once the page has loaded and the hero photo is on
   // screen (3s at most). It starts at once when index.html hid the
@@ -74,6 +85,17 @@ try {
         };
         const painted = () => {
           const hero = document.querySelector(".hero-food img");
+          // Element timing reports the photo once its frame is on screen,
+          // which a busy GPU can hold back well past animation frames.
+          if (hero && PerformanceObserver.supportedEntryTypes?.includes("element")) {
+            new PerformanceObserver((list, observer) => {
+              if (list.getEntries().some((entry) => entry.identifier === "hero")) {
+                observer.disconnect();
+                setTimeout(start);
+              }
+            }).observe({ type: "element", buffered: true });
+            return;
+          }
           Promise.resolve(hero?.decode())
             .catch(() => {})
             .then(() =>

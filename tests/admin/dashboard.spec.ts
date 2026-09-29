@@ -343,7 +343,7 @@ test("RTL, mobile layout, category protection, variants and hidden content", asy
   expect(data.menu_items.find((i) => i.id === "family").variants[0].price).toBe(
     250,
   );
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   for (const width of [320, 390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });

@@ -128,10 +128,13 @@ test.describe("runway before the artwork", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     let release = () => {};
     const held = new Promise<void>((resolve) => (release = resolve));
-    await page.route("**/hero/shawarma-exploded-768.webp", async (route) => {
-      await held;
-      await route.continue();
-    });
+    await page.route(
+      "**/optimized/shawarma-exploded-768-*.webp",
+      async (route) => {
+        await held;
+        await route.continue();
+      },
+    );
     await page.goto("/");
     const story = page.locator(".hero-story");
     await expect(story).toHaveAttribute("data-scroll-runway", "true");
@@ -165,7 +168,7 @@ test("reduced motion bypasses the scroll runway", async ({ page }) => {
 test("a failed reveal image keeps the original hero and does not pin scrolling", async ({
   page,
 }) => {
-  await page.route("**/hero/shawarma-exploded-768.webp", (route) =>
+  await page.route("**/optimized/shawarma-exploded-768-*.webp", (route) =>
     route.abort(),
   );
   await page.goto("/");

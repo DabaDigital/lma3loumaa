@@ -1,4 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import imageAssets from "./imageAssets.json";
+
+const cutout = imageAssets["/assets/hero/rotisserie-cutout.png"];
+// The cutout's drawn width: 24% of the scene, about 22vw on phones and at
+// most 150px on wider screens (shawarmaScene.css).
+const cutoutSizes = "(max-width: 650px) 22vw, 150px";
 
 type Mesh = { vertices: Float32Array; indices: Uint16Array };
 type Renderer = {
@@ -279,8 +285,8 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
   const [missing, setMissing] = useState(false);
   // A small decoration behind the sandwich: it downloads once the app runs,
   // after the prerendered page has painted, rather than alongside it.
-  const [source, setSource] = useState<string>();
-  useEffect(() => setSource("/assets/hero/rotisserie-cutout.webp"), []);
+  const [source, setSource] = useState<typeof cutout>();
+  useEffect(() => setSource(cutout), []);
   useEffect(() => {
     const element = canvas.current,
       image = photo.current;
@@ -313,7 +319,9 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     // scrolling turns it. Building it (mesh, shaders, texture) is one long
     // task, so it waits for the visitor's first scroll, touch, key or mouse
     // movement instead of competing with the page load, and then uses a photo
-    // decoded off the main thread.
+    // decoded off the main thread. That photo is the full-size cutout: the
+    // lathe wraps the middle of it all the way round, so the front shows a
+    // quarter of its width, magnified well past the file drawn on screen.
     let wanted = false;
     const intents = [
       "scroll",
@@ -333,16 +341,18 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
       window.addEventListener(type, want, { passive: true });
     const build = () => {
       building = null;
-      void image
+      const texture = new Image();
+      texture.src = cutout.src;
+      void texture
         .decode()
         .catch(() => {})
         .then(() => {
-          if (disposed || instance || !image.naturalWidth) return;
+          if (disposed || instance || !texture.naturalWidth) return;
           if (!width || !height) {
             width = element.clientWidth;
             height = element.clientHeight;
           }
-          instance = createRenderer(element, image);
+          instance = createRenderer(element, texture);
           if (instance) {
             draw();
             setRenderer("webgl");
@@ -409,7 +419,9 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     >
       <img
         ref={photo}
-        src={source}
+        src={source?.src}
+        srcSet={source?.srcSet}
+        sizes={cutoutSizes}
         alt=""
         loading="lazy"
         decoding="async"

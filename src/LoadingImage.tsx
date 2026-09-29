@@ -72,7 +72,8 @@ function optimized(source: string): Asset | undefined {
       `?width=${width}&resize=contain&quality=75`;
     return {
       src: render(768),
-      srcSet: [384, 768, 1280]
+      // 512 fits the dish photos drawn about 275px wide on 1.75x phones.
+      srcSet: [384, 512, 768, 1280]
         .map((width) => `${render(width)} ${width}w`)
         .join(", "),
       resized: true,

@@ -250,10 +250,10 @@ test("showcase headline never collides with the side dishes", async ({
     }
   };
   await check("French");
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "English" }).click();
   await check("English");
-  await page.getByRole("button", { name: "Language", exact: true }).click();
+  await page.getByRole("button", { name: "EN Language", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await check("Arabic");
 });
@@ -263,7 +263,7 @@ test("Arabic showcase keyboard navigation and more categories fit a narrow phone
 }) => {
   await page.setViewportSize({ width: 320, height: 844 });
   await page.goto("/");
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   const carousel = page.getByRole("region", { name: "استكشف النكهات" });
@@ -301,7 +301,7 @@ test("Arabic showcase keyboard navigation and more categories fit a narrow phone
 
 test("all languages persist and Arabic uses RTL", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "English" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await page.locator(".menu-showcase-catalog-trigger").click();
@@ -311,7 +311,7 @@ test("all languages persist and Arabic uses RTL", async ({ page }) => {
   );
   await page.goto("/");
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await page.getByRole("button", { name: "Language", exact: true }).click();
+  await page.getByRole("button", { name: "EN Language", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
@@ -348,7 +348,7 @@ test.describe("first visit", () => {
     await expect(page.getByRole("heading", { level: 1 })).toContainText(
       "لمعلومة",
     );
-    await page.getByRole("button", { name: "اللغة", exact: true }).click();
+    await page.getByRole("button", { name: "AR اللغة", exact: true }).click();
     await page.getByRole("menuitemradio", { name: "Français" }).click();
     await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
     await page.locator(".menu-showcase-catalog-trigger").click();
@@ -544,7 +544,7 @@ test("follow-us section sits between reviews and locations and links to Instagra
     page.locator("footer").getByRole("link", { name: "Instagram" }),
   ).toHaveAttribute("href", instagram);
 
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(social.getByRole("heading", { level: 2 })).toHaveText(
     "تابعونا وخليكم ديما مع المعلومة",

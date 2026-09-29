@@ -3,6 +3,7 @@ import type { PointerEvent } from "react";
 import { ArrowDown, Pause, Play } from "lucide-react";
 import { FoodVisual } from "./components";
 import type { Locale } from "./data";
+import imageAssets from "./imageAssets.json";
 import { useShawarmaScroll } from "./useShawarmaScroll";
 import { RotisserieModel } from "./RotisserieModel";
 import "./shawarmaScene.css";
@@ -46,7 +47,7 @@ const copy = {
   },
 };
 
-const layersImage = "/assets/hero/shawarma-exploded-768.webp";
+const layersImage = imageAssets["/assets/hero/shawarma-exploded.png"].src;
 
 /** Photo layers in a CSS perspective scene with a small scroll-driven rotisserie. */
 export function ShawarmaScene({
@@ -174,9 +175,16 @@ export function ShawarmaScene({
                   loading="eager"
                   fetchPriority="low"
                   draggable={false}
-                  onLoad={() => {
-                    loadedLayers.current.add(index);
-                    if (loadedLayers.current.size === 4) setReady(true);
+                  onLoad={(event) => {
+                    // Hidden until scrolling opens them (shawarmaScene.css):
+                    // decoded now, they show on the first frame of the reveal.
+                    void event.currentTarget
+                      .decode()
+                      .catch(() => {})
+                      .then(() => {
+                        loadedLayers.current.add(index);
+                        if (loadedLayers.current.size === 4) setReady(true);
+                      });
                   }}
                   onError={() => setFailed(true)}
                 />

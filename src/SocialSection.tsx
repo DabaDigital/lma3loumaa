@@ -587,6 +587,8 @@ function PostCard({
           rel="noopener noreferrer"
         >
           {t("seePost")}
+          {/* Every card has this link; the name says which post it opens. */}
+          <span className="sr-only">: {title}</span>
           <ArrowUpRight size={15} aria-hidden="true" />
         </a>
       </div>

@@ -274,7 +274,7 @@ test("review moderation works on mobile in Arabic and English", async ({
   await backend(page);
   await login(page);
   await expect(page.getByRole("article")).toHaveCount(1);
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(
     page.getByRole("heading", { name: "آراء الزبائن", exact: true }),
@@ -291,7 +291,7 @@ test("review moderation works on mobile in Arabic and English", async ({
     path: "admin-test-results/reviews-ar-mobile.png",
     fullPage: true,
   });
-  await page.getByRole("button", { name: "اللغة", exact: true }).click();
+  await page.getByRole("button", { name: "AR اللغة", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "English" }).click();
   await expect(
     page.getByRole("heading", { name: "Customer reviews", exact: true }),

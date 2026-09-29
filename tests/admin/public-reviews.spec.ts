@@ -436,7 +436,9 @@ test("review cards fit French and Arabic screens and photos load as thumbnails",
   await expect(section.locator(".review-card")).toHaveCount(3);
   for (const locale of ["fr", "ar"]) {
     if (locale === "ar") {
-      await page.getByRole("button", { name: "Langue", exact: true }).click();
+      await page
+        .getByRole("button", { name: "FR Langue", exact: true })
+        .click();
       await page.getByRole("menuitemradio", { name: "العربية" }).click();
     }
     await expect(page.locator("html")).toHaveAttribute(
@@ -632,7 +634,7 @@ test("review form supports keyboard stars and Arabic on narrow screens", async (
   ).toBeChecked();
   await dialog.screenshot({ path: "test-results/review-form-desktop.png" });
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Langue", exact: true }).click();
+  await page.getByRole("button", { name: "FR Langue", exact: true }).click();
   await page.getByRole("menuitemradio", { name: "العربية" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   for (const width of [390, 320]) {

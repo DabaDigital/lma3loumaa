@@ -18,27 +18,42 @@ assets = root / "public/assets"
 output = assets / "optimized"
 output.mkdir(exist_ok=True)
 manifest = {}
+written = set()
 original_bytes = delivery_bytes = 0
+# Widths follow the drawn size. The logo spans 119-155 CSS px. The rotisserie
+# cutout is drawn 90-150 CSS px wide (shawarmaScene.css) and is also the WebGL
+# model's texture. The reveal layers are one file: hidden until scrolling opens
+# them, then drawn up to ~600 device px wide.
+widths = {
+    "lma3louma-logo.png": [128, 256, 384],
+    "rotisserie-cutout.png": [192, 256, 384, 512],
+    "shawarma-exploded.png": [768],
+}
 for source in sorted(assets.rglob("*")):
     if source.suffix.lower() not in (".png", ".jpg", ".jpeg") or output in source.parents:
         continue
-    # Tab artwork is handled separately below.
-    if source.name.startswith("lma3louma-tab"):
+    # Tab artwork is handled separately below; menuShowcase.css draws the
+    # showcase decorations from their own files.
+    if source.name.startswith("lma3louma-tab") or "menu-showcase" in source.parts:
         continue
     with Image.open(source) as original:
         picture = ImageOps.exif_transpose(original).convert("RGBA")
         width, height = picture.size
-        sizes = [128, 256, 384] if source.name == "lma3louma-logo.png" else [320, 384, 512, 768, 1280]
+        sizes = widths.get(source.name, [320, 384, 512, 768, 1280])
         variants = []
         for size in sorted({min(n, width) for n in sizes}):
             resized = picture.resize((size, round(height * size / width)), Image.Resampling.LANCZOS)
             buffer = io.BytesIO()
-            resized.save(buffer, format="WEBP", quality=86, method=6)
+            # About 1/6 byte per pixel, Lighthouse's target. At their drawn
+            # sizes these look the same as quality 86 with lossless alpha,
+            # which is a third larger (most photos are transparent cutouts).
+            resized.save(buffer, format="WEBP", quality=75, alpha_quality=60, method=6)
             data = buffer.getvalue()
             digest = hashlib.sha256(data).hexdigest()[:12]
             slug = re.sub(r"[^a-z0-9]+", "-", source.stem.lower()).strip("-")
             name = f"{slug}-{size}-{digest}.webp"
             (output / name).write_bytes(data)
+            written.add(name)
             variants.append((f"/assets/optimized/{name}", size))
         manifest["/" + source.relative_to(root / "public").as_posix()] = {
             "src": variants[-1][0],
@@ -50,6 +65,10 @@ for source in sorted(assets.rglob("*")):
         delivery_bytes += len(data)
 
 (root / "src/imageAssets.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+# Versions from earlier settings, or of removed photos, are no longer referenced.
+for stale in output.glob("*.webp"):
+    if stale.name not in written:
+        stale.unlink()
 
 # Preserve the exact circular artwork and its clipping, at favicon resolution.
 svg_source = assets / "lma3louma-tab-circle.svg"

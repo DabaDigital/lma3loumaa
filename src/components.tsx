@@ -334,7 +334,6 @@ export function Dropdown({
       <button
         ref={trigger}
         className="language-button"
-        aria-label={t("language")}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={id}
@@ -352,7 +351,10 @@ export function Dropdown({
         }}
       >
         <Globe size={17} />
+        {/* The name starts with the visible code, so "AR" also works as a
+            spoken command. */}
         <span>{value.toUpperCase()}</span>
+        <span className="sr-only">{t("language")}</span>
         <ChevronDown size={13} />
       </button>
       {open && (
@@ -803,6 +805,7 @@ export function FoodVisual({
           height={h}
           loading={className.includes("hero") ? "eager" : "lazy"}
           fetchPriority={className.includes("hero") ? "high" : "auto"}
+          elementtiming={className.includes("hero") ? "hero" : undefined}
           sizes={
             sizes ??
             (className.includes("hero")
