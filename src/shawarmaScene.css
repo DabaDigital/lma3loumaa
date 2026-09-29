@@ -530,14 +530,15 @@
     transform: translate3d(0, -12px, 65px) rotate(1deg);
   }
 }
+/* Scale and slide only: the hero photo is the page's largest paint, and Chrome
+   does not count an element painted at opacity 0 until it repaints, which here
+   was only once the app had loaded. */
 @keyframes shawarma-arrive {
   from {
-    opacity: 0;
     scale: 0.8;
     translate: 0 24px;
   }
   to {
-    opacity: 1;
     scale: 1;
     translate: 0 0;
   }

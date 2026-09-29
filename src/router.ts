@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
+import { setPrerenderedPage } from "./hydration";
 
 /** The public site's pages. Links between them swap the page in place, so the
  * menu already loaded from the database stays on screen instead of reloading. */
@@ -13,6 +14,8 @@ let currentEntry = entryKey();
 let currentPath = location.pathname + location.search;
 
 function render() {
+  // The page now shown was rendered here, not prerendered (hydration.ts).
+  setPrerenderedPage(false);
   currentEntry = entryKey();
   currentPath = location.pathname + location.search;
   flushSync(() => listeners.forEach((listener) => listener()));

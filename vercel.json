@@ -15,8 +15,8 @@
     }
   ],
   "rewrites": [
-    { "source": "/admin/:path*", "destination": "/index.html" },
-    { "source": "/components", "destination": "/index.html" },
-    { "source": "/menu", "destination": "/index.html" }
+    { "source": "/admin/:path*", "destination": "/app.html" },
+    { "source": "/components", "destination": "/app.html" },
+    { "source": "/menu", "destination": "/app.html" }
   ]
 }

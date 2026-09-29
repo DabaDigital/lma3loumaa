@@ -28,6 +28,34 @@ import { ContentSkeleton } from "./Skeleton";
 
 const ReviewForm = lazy(() => import("./ReviewForm"));
 
+// Creating Intl formatters is slow (locale data loads on first use), so each
+// language builds its set once instead of on every call and render.
+const formatterSets = new Map<Locale, ReturnType<typeof createFormatters>>();
+function createFormatters(locale: Locale) {
+  // Western digits, as used on Moroccan menus and receipts.
+  const tag = locale === "ar" ? "ar-u-nu-latn" : locale;
+  const number = new Intl.NumberFormat(tag);
+  const oneDecimal = new Intl.NumberFormat(tag, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  return {
+    format: (value: number) => number.format(value),
+    decimal: (value: number) => oneDecimal.format(value),
+    date: new Intl.DateTimeFormat(tag, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }),
+    pluralRules: new Intl.PluralRules(tag),
+  };
+}
+function formatters(locale: Locale) {
+  let set = formatterSets.get(locale);
+  if (!set) formatterSets.set(locale, (set = createFormatters(locale)));
+  return set;
+}
+
 type Copy = (key: keyof typeof reviewCopy) => string;
 type Format = (value: number) => string;
 
@@ -324,19 +352,7 @@ export function Reviews() {
   const { i18n } = useTranslation();
   const locale = (i18n.resolvedLanguage || "ar") as Locale;
   const t: Copy = (key) => reviewCopy[key][locale];
-  // Western digits, as used on Moroccan menus and receipts.
-  const tag = locale === "ar" ? "ar-u-nu-latn" : locale;
-  const format: Format = (value) => new Intl.NumberFormat(tag).format(value);
-  const decimal: Format = (value) =>
-    new Intl.NumberFormat(tag, {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }).format(value);
-  const date = new Intl.DateTimeFormat(tag, {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const { format, decimal, date, pluralRules } = formatters(locale);
   const [sort, setSort] = useState<ReviewSort>("all");
   const [requestedPage, setRequestedPage] = useState(1);
   const [open, setOpen] = useState(false);
@@ -396,7 +412,7 @@ export function Reviews() {
               t={t}
               format={format}
               decimal={decimal}
-              pluralRules={new Intl.PluralRules(tag)}
+              pluralRules={pluralRules}
             />
           )
         )}

@@ -168,9 +168,10 @@ export function MenuPage({
                           {t(item.tag)}
                         </span>
                       )}
+                      {/* The card photo's rendered width (styles.css). */}
                       <FoodVisual
                         kind={item.image}
-                        sizes="(max-width: 650px) 50vw, 260px"
+                        sizes="(max-width: 650px) 42vw, (max-width: 1100px) 205px, 260px"
                       />
                       <span className="card-expand">
                         <Plus size={17} />

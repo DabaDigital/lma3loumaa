@@ -1,5 +1,6 @@
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -92,17 +93,33 @@ function readLinks(rows: Partial<SiteLink>[]): SiteLink[] {
     })
     .sort(bySortOrder);
 }
+type Rows = { data: any[] | null; error: unknown };
+// The full-menu page starts these public requests before the app has
+// downloaded (vite.config.ts); the first refresh takes their responses.
+function takeEarlyRequests() {
+  const page = window as { __lmaContent?: Record<string, Promise<Rows>> };
+  const early = page.__lmaContent;
+  delete page.__lmaContent;
+  return early;
+}
+// An early request that failed is made again through supabase-js, which
+// retries as usual.
+const orEarly = (
+  early: Promise<Rows> | undefined,
+  query: () => PromiseLike<Rows>,
+): PromiseLike<Rows> =>
+  early ? early.then((rows) => (rows.error ? query() : rows)) : query();
 // Reads a table that may not exist yet without failing the menu request:
 // null means "could not be read".
-const readOptional = <T,>(table: string, read: (rows: any[]) => T) =>
-  supabase!
-    .from(table)
-    .select("*")
-    .then(
-      ({ data: rows, error: failure }) =>
-        failure || !rows ? null : read(rows),
-      () => null,
-    );
+const readOptional = <T,>(
+  table: string,
+  read: (rows: any[]) => T,
+  early?: Promise<Rows>,
+) =>
+  orEarly(early, () => supabase!.from(table).select("*")).then(
+    ({ data: rows, error: failure }) => (failure || !rows ? null : read(rows)),
+    () => null,
+  );
 // Keeps the previous reference when a poll returns identical data.
 const same = <T,>(previous: T, next: T) =>
   JSON.stringify(previous) === JSON.stringify(next) ? previous : next;
@@ -152,43 +169,56 @@ export function ContentProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     if (!supabase) return;
     const version = ++request.current;
+    const early = takeEarlyRequests();
+    let update: () => void;
     try {
       const [results, nextLinks, nextPosts] = await Promise.all([
         Promise.all(
           ["categories", "menu_items", "locations"].map((table) =>
-            supabase!.from(table).select("*").order("sort_order").order("id"),
+            orEarly(early?.[table], () =>
+              supabase!.from(table).select("*").order("sort_order").order("id"),
+            ),
           ),
         ),
         // Links and posts live in their own tables. Failing to read them (for
         // example before their migration is applied) must not take the menu
         // down. Sorted here: older link tables have no sort_order column.
-        readOptional("site_links", readLinks),
-        readOptional("social_posts", (rows: SocialPost[]) =>
-          [...rows].sort(bySortOrder),
+        readOptional("site_links", readLinks, early?.site_links),
+        readOptional(
+          "social_posts",
+          (rows: SocialPost[]) => [...rows].sort(bySortOrder),
+          early?.social_posts,
         ),
       ]);
-      if (version !== request.current) return;
-      if (nextLinks) setLinks((previous) => same(previous, nextLinks));
-      setLinksError(!nextLinks);
-      if (nextPosts) setPosts((previous) => same(previous, nextPosts));
-      setPostsError(!nextPosts);
-      if (results.some((r) => r.error)) throw new Error("content unavailable");
-      const next = {
-        categories: results[0].data as Category[],
-        items: results[1].data as MenuItem[],
-        locations: results[2].data as Location[],
+      update = () => {
+        if (nextLinks) setLinks((previous) => same(previous, nextLinks));
+        setLinksError(!nextLinks);
+        if (nextPosts) setPosts((previous) => same(previous, nextPosts));
+        setPostsError(!nextPosts);
+        const failed = results.some((r) => r.error);
+        if (!failed) {
+          const next = {
+            categories: results[0].data as Category[],
+            items: results[1].data as MenuItem[],
+            locations: results[2].data as Location[],
+          };
+          // Polls often return identical content. Preserve references so menu
+          // filtering, reveal observers and open previews do not rerender.
+          setData((previous) => same(previous, next));
+        }
+        setError(failed);
+        setLoading(false);
       };
-      // Polls often return identical content. Preserve references so menu
-      // filtering, reveal observers and open previews do not rerender.
-      setData((previous) =>
-        JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
-      );
-      setError(false);
     } catch {
-      if (version === request.current) setError(true);
-    } finally {
-      if (version === request.current) setLoading(false);
+      update = () => {
+        setError(true);
+        setLoading(false);
+      };
     }
+    if (version !== request.current) return;
+    // Background data: as a transition, React renders the filled-in page in
+    // short slices instead of one long task that blocks input.
+    startTransition(update);
   }, []);
   useEffect(() => {
     let active = true;

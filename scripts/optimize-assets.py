@@ -28,7 +28,7 @@ for source in sorted(assets.rglob("*")):
     with Image.open(source) as original:
         picture = ImageOps.exif_transpose(original).convert("RGBA")
         width, height = picture.size
-        sizes = [128, 256, 384] if source.name == "lma3louma-logo.png" else [384, 768, 1280]
+        sizes = [128, 256, 384] if source.name == "lma3louma-logo.png" else [320, 384, 512, 768, 1280]
         variants = []
         for size in sorted({min(n, width) for n in sizes}):
             resized = picture.resize((size, round(height * size / width)), Image.Resampling.LANCZOS)
@@ -56,7 +56,8 @@ svg_source = assets / "lma3louma-tab-circle.svg"
 svg = svg_source.read_text(encoding="utf-8")
 embedded = re.search(r"data:image/jpeg;base64,([^\"]+)", svg)
 with Image.open(io.BytesIO(base64.b64decode(embedded[1]))) as artwork:
-    artwork.thumbnail((128, 128), Image.Resampling.LANCZOS)
+    # Twice the largest size a tab icon is drawn at (32px).
+    artwork.thumbnail((64, 64), Image.Resampling.LANCZOS)
     buffer = io.BytesIO()
     artwork.save(buffer, format="PNG", optimize=True)
     svg = svg.replace(embedded[0], "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode())

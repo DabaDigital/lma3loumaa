@@ -2,6 +2,7 @@ import { startTransition } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 // Root (i18n, then App and its stylesheets) comes first to keep the cascade.
 import { Root } from "./Root";
+import { setPrerenderedPage } from "./hydration";
 import "./styles.css";
 import "./reviews.css";
 import "./skeleton.css";
@@ -17,6 +18,8 @@ const tree = <Root admin={/^\/admin(?:\/|$)/.test(window.location.pathname)} />;
 startTransition(() => {
   const html = document.documentElement;
   if (container.firstElementChild && html.dataset.render !== "client") {
+    // Until the first client-side navigation (hydration.ts).
+    setPrerenderedPage(true);
     hydrateRoot(container, tree);
     return;
   }

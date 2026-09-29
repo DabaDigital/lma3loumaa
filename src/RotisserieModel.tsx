@@ -300,9 +300,28 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     const requestDraw = () => {
       if (!pending) pending = requestAnimationFrame(draw);
     };
-    // At rest the model matches the cutout already on screen, so it is built
-    // when the page is idle, from a photo decoded off the main thread, rather
-    // than competing with the page load.
+    // At rest the model matches the cutout already on screen, and only
+    // scrolling turns it. Building it (mesh, shaders, texture) is one long
+    // task, so it waits for the visitor's first scroll, touch, key or mouse
+    // movement instead of competing with the page load, and then uses a photo
+    // decoded off the main thread.
+    let wanted = false;
+    const intents = [
+      "scroll",
+      "wheel",
+      "touchstart",
+      "pointerdown",
+      "pointermove",
+      "keydown",
+    ] as const;
+    const want = () => {
+      if (wanted) return;
+      wanted = true;
+      for (const type of intents) window.removeEventListener(type, want);
+      load();
+    };
+    for (const type of intents)
+      window.addEventListener(type, want, { passive: true });
     const build = () => {
       building = null;
       void image
@@ -318,14 +337,9 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
         });
     };
     const load = () => {
-      if (!image.naturalWidth || instance || building) return;
-      if (typeof requestIdleCallback === "function") {
-        const id = requestIdleCallback(build, { timeout: 2000 });
-        building = () => cancelIdleCallback(id);
-      } else {
-        const id = setTimeout(build, 200);
-        building = () => clearTimeout(id);
-      }
+      if (!wanted || !image.naturalWidth || instance || building) return;
+      const id = setTimeout(build);
+      building = () => clearTimeout(id);
     };
     // A lost context uses the same transparent cutout instead of a blank canvas.
     const lost = () => {
@@ -338,8 +352,10 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     if (image.complete) load();
     // Scroll already runs in rAF: paint its shared progress without a second-frame delay.
     const changes = new MutationObserver(() => {
-      if (visible && !document.hidden)
-        instance?.draw(Number(scene.dataset.progress || 0));
+      const progress = Number(scene.dataset.progress || 0);
+      // A page restored part-way through the reveal needs the model at once.
+      if (progress > 0) want();
+      if (visible && !document.hidden) instance?.draw(progress);
     });
     changes.observe(scene, {
       attributes: true,
@@ -355,6 +371,7 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     document.addEventListener("visibilitychange", requestDraw);
     return () => {
       disposed = true;
+      for (const type of intents) window.removeEventListener(type, want);
       building?.();
       cancelAnimationFrame(pending);
       changes.disconnect();

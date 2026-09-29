@@ -731,6 +731,10 @@ export const foodImages: Partial<Record<FoodImage, [string, number, number]>> =
     rolls: ["/assets/shawarma rolls.png", 1536, 1024],
     family: ["/assets/family-box-web.png", 1254, 1254],
   };
+/** The logo's width: the larger of the header's and the footer's
+ * (styles.css), so every logo on the page picks the same file (the 256px one
+ * on phones) and downloads it once. */
+export const logoSizes = "(max-width: 650px) 130px, 155px";
 export function FoodVisual({
   kind,
   className = "",
@@ -773,6 +777,7 @@ export function FoodVisual({
           <LoadingImage
             src="/assets/lma3louma-logo.png"
             alt=""
+            sizes={logoSizes}
             loading="lazy"
             onLoad={(event) => resetFoodBackground(event.currentTarget)}
             draggable={false}

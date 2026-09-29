@@ -209,9 +209,11 @@
     transform: translateX(60%);
   }
 }
+/* Starts visible: Chrome does not count a photo first painted at opacity 0
+   as the page's largest paint until something repaints it. */
 @keyframes image-reveal {
   from {
-    opacity: 0;
+    opacity: 0.25;
   }
 }
 @media (max-width: 1250px) {

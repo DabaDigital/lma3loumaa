@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { SiteLink, SocialPost } from "./content";
+import { onPrerenderedPage } from "./hydration";
 import { socialPosts } from "./data";
 import type { Locale } from "./data";
 import { LoadingImage } from "./LoadingImage";
@@ -102,6 +103,10 @@ function useReelRunway(
   enabled: boolean,
   rtl: boolean,
 ) {
+  const near = useRef(false);
+  // Part of the prerendered page (even when it mounts later, once the posts
+  // arrive), rather than rendered by a client-side navigation (hydration.ts).
+  const prerendered = useRef(onPrerenderedPage());
   useLayoutEffect(() => {
     const root = runway.current;
     const stage = root?.querySelector<HTMLElement>(".social-stage");
@@ -175,17 +180,38 @@ function useReelRunway(
         behavior: "instant",
       });
     };
-    measure();
     const resize = new ResizeObserver(measure);
-    resize.observe(stage);
-    if (header) resize.observe(header);
-    if (dock) resize.observe(dock);
-    phone.addEventListener("change", measure);
+    const start = () => {
+      near.current = true;
+      resize.observe(stage);
+      if (header) resize.observe(header);
+      if (dock) resize.observe(dock);
+      phone.addEventListener("change", measure);
+      window.addEventListener("resize", measure);
+    };
+    // The reels sit far down the page, in a section the browser skips laying
+    // out while it is off screen. On the prerendered page, measuring them
+    // would lay it out during the load (and again when the posts arrive), so
+    // that waits until the visitor comes within a screen of it. Rendered by a
+    // client-side navigation, which may scroll to a section at once, the
+    // reels measure straight away (hydration.ts).
+    const approach = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        approach.disconnect();
+        start();
+      },
+      { rootMargin: "100% 0px" },
+    );
+    if (near.current || !prerendered.current) {
+      measure();
+      start();
+    } else approach.observe(root.closest("section") ?? root);
     track.addEventListener("focusin", onFocus);
     window.addEventListener("scroll", requestPaint, { passive: true });
-    window.addEventListener("resize", measure);
     return () => {
       cancelAnimationFrame(frame);
+      approach.disconnect();
       resize.disconnect();
       phone.removeEventListener("change", measure);
       track.removeEventListener("focusin", onFocus);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
+import { onPrerenderedPage } from "./hydration";
 
 /** A native sticky runway consumes scroll distance without trapping wheel/touch input.
  * CSS lays the runway out (shawarmaScene.css), so it is in the first paint and the
@@ -89,7 +90,9 @@ export function useShawarmaScroll(
       requestRender();
     }
     setExpanded(false);
-    measure();
+    // On the prerendered page the observer's initial callback measures
+    // instead, before the next paint (hydration.ts).
+    if (!onPrerenderedPage()) measure();
     const resize = new ResizeObserver(measure);
     resize.observe(hero);
     resize.observe(art);
@@ -97,7 +100,8 @@ export function useShawarmaScroll(
     window.addEventListener("scroll", requestRender, { passive: true });
     window.addEventListener("resize", measure);
     // Font loading and language changes can alter the headline and pin offset.
-    void document.fonts.ready.then(measure);
+    if (document.fonts.status !== "loaded")
+      void document.fonts.ready.then(measure);
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);

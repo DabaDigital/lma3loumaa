@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { supabase } from "./supabase";
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
@@ -171,10 +177,13 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
     try {
       const next = await fetchReviewStats();
       if (request !== statsRequest.current) return;
-      setStats((previous) =>
-        JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
-      );
-      setStatsError(false);
+      // Background data renders in short slices (see content.tsx).
+      startTransition(() => {
+        setStats((previous) =>
+          JSON.stringify(previous) === JSON.stringify(next) ? previous : next,
+        );
+        setStatsError(false);
+      });
     } catch {
       if (request === statsRequest.current) setStatsError(true);
     }
@@ -186,11 +195,13 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
     try {
       const reviews = await fetchReviewPage(sort, page);
       if (request !== pageRequest.current) return;
-      setList((previous) =>
-        previous?.key === key &&
-        JSON.stringify(previous.reviews) === JSON.stringify(reviews)
-          ? previous
-          : { key, reviews },
+      startTransition(() =>
+        setList((previous) =>
+          previous?.key === key &&
+          JSON.stringify(previous.reviews) === JSON.stringify(reviews)
+            ? previous
+            : { key, reviews },
+        ),
       );
     } catch {
       if (request === pageRequest.current) setPageError(true);

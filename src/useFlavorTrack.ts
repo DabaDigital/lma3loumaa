@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import type { RefObject } from "react";
+import { onPrerenderedPage } from "./hydration";
 
 const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
@@ -277,7 +278,11 @@ export function useFlavorTrack({
       requestPaint();
     };
 
-    measure();
+    // Measure at once (a new category holds the stage in place with it),
+    // except for the first time on the prerendered page: the observer's
+    // initial callback measures then, still before the next paint
+    // (hydration.ts).
+    if (anchored || !onPrerenderedPage()) measure();
     const resize = new ResizeObserver(measure);
     resize.observe(stage);
     resize.observe(track);
@@ -286,7 +291,8 @@ export function useFlavorTrack({
     window.addEventListener("scroll", requestPaint, { passive: true });
     window.addEventListener("resize", measure);
     // Font loading and language changes move the side slots and the pin.
-    void document.fonts.ready.then(measure);
+    if (document.fonts.status !== "loaded")
+      void document.fonts.ready.then(measure);
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);

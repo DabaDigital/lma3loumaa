@@ -18,7 +18,7 @@ test("mobile gets a small, prioritized hero and responsive bundled photos", asyn
     };
   });
   expect(image.source).toMatch(
-    /\/optimized\/shawarma-normal-(384|768)-.*\.webp$/,
+    /\/optimized\/shawarma-normal-(320|384|512|768)-.*\.webp$/,
   );
   expect(image.decoding).toBe("async");
   const path = decodeURIComponent(new URL(image.source).pathname);
@@ -58,7 +58,7 @@ test("desktop menu cards download the smallest photo variant", async ({
   for (const index of [0, 1, 2, 3])
     await expect(photos.nth(index)).not.toHaveClass(/skeleton-image/);
   expect(requested.length).toBeGreaterThan(0);
-  for (const url of requested) expect(url).toMatch(/-384-[0-9a-f]+\.webp$/);
+  for (const url of requested) expect(url).toMatch(/-320-[0-9a-f]+\.webp$/);
 });
 
 test("every generated responsive variant exists and decodes", async ({

@@ -18,7 +18,8 @@ globalThis.matchMedia = (media) => ({
 });
 
 // Optional argument: the build's outDir (default dist).
-const file = `${process.argv[2] || "dist"}/index.html`;
+const dir = process.argv[2] || "dist";
+const file = `${dir}/index.html`;
 const empty = '<div id="root"></div>';
 const vite = await createServer({
   mode: "production",
@@ -34,6 +35,10 @@ try {
   const body = render().replace(/^(?:<link rel="preload" as="image"[^>]*>)+/, "");
   let page = await readFile(file, "utf8");
   if (!page.includes(empty)) throw new Error(`${file} has no empty #root`);
+  // The other pages (the full menu, the dashboard) render in the browser.
+  // vercel.json serves them the built page as it was, so they neither download
+  // the hidden home page's photos nor wait behind it for the app.
+  await writeFile(`${dir}/app.html`, page);
   page = page.replace(empty, `<div id="root">${body}</div>`);
   // The page is already in the HTML, so the app need not compete with it: its
   // files start downloading once the page has loaded and the hero photo is on

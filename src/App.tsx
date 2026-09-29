@@ -32,6 +32,7 @@ import {
   Modal,
   FoodVisual,
   ExternalLink,
+  logoSizes,
 } from "./components";
 import { categories as initialCategories } from "./data";
 import { usePublicContent } from "./content";
@@ -60,7 +61,11 @@ function Brand({ footer = false }: { footer?: boolean }) {
       aria-label="Shawarma Lma3louma"
     >
       <span className="brand-mark">
-        <LoadingImage src="/assets/lma3louma-logo.png" sizes="160px" alt="" />
+        <LoadingImage
+          src="/assets/lma3louma-logo.png"
+          sizes={logoSizes}
+          alt=""
+        />
       </span>
     </a>
   );

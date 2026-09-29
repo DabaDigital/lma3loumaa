@@ -1,3 +1,29 @@
+# Lighthouse follow-up — 29 September 2026
+
+Lighthouse 13.5 (default simulated throttling: mobile is a Moto G Power profile, 4× CPU, slow 4G), headless Chromium 141 on Linux, against production builds served with Brotli and the Vercel rewrites and cache headers. Supabase is replaced by a local mock with the built-in menu, three links, four posts and 18 reviews, so the page fetches and renders real content. Lab numbers from one machine; PageSpeed Insights runs the same Lighthouse on Google's servers against the deployed site, so expect some spread.
+
+| Page | Original | After |
+| --- | ---: | ---: |
+| Home, mobile (5 runs) | 75–94, median 81 | 94–98, median 98 |
+| Home, desktop | 99–100 | 100 |
+| Full menu, mobile (3 runs) | 75–81 | 89–90 |
+| Full menu, desktop | 99 | 100 |
+
+Home mobile LCP went from 3.3–4.7 s to 2.2–2.3 s, TBT from 170–310 ms to 90–220 ms.
+
+What made the difference:
+
+- **Hero entrance.** `.shawarma-depth` faded in from `opacity: 0`. Chrome does not count an element first painted fully transparent as the largest paint until it repaints, which happened only once the app loaded, so Lighthouse charged the whole app download to LCP. The entrance now scales and slides only. Lazy photos fade in from 25% opacity for the same reason.
+- **No forced layouts while hydrating.** The hero, menu showcase and reels hooks measured the page synchronously in their effects. On the prerendered page (`src/hydration.ts`: from hydration until the first client-side navigation) their `ResizeObserver`'s initial callback does it instead, still before the next paint. The reels, far down in a `content-visibility` section, wait until the visitor is within a screen of them. Pages rendered by a navigation measure at once, since the router scrolls to the target section right after rendering.
+- **Background data as transitions.** Content and review responses update state inside `startTransition`, so React renders them in slices.
+- **Less work at load.** The WebGL rotisserie (mesh, shaders, texture: one ~280 ms task on a throttled CPU) is built on the first scroll, touch, key or pointer input; until then the identical cutout shows. Reviews reuse one set of `Intl` formatters per language.
+- **Fewer bytes before the first paint.** The `@font-face` rules are inlined into the built page; the favicon embeds a 64 px image (10 KB instead of 32 KB); logos declare their real width and share one file (256 px on phones).
+- **Full menu page.** `/menu`, `/admin` and `/components` get `app.html`, the built page without the hidden prerendered home, so they no longer download the hero photo. The page preconnects to Supabase, and on `/menu` the public content requests start from the page head while the app downloads (skipped when a Supabase session is stored). Photos gained 320 px and 512 px variants and the menu cards declare their rendered width.
+
+Remaining on `/menu`: its largest paint is a dish photo, which can only be requested after the app has run and rendered the cards, so LCP stays around 3.4 s. Prerendering `/menu` like the home page (with the app fetched at low priority) measured 88–92 in a prototype, but it needs its hydration mismatch fixed first (React error #418).
+
+Lighthouse sometimes records the first paint about a second late on this page (compositor frames dropped, idle threads); it did so before these changes too and cannot be reproduced outside Lighthouse. Those runs are the low end of the ranges above.
+
 # Performance improvements — 9 September 2026
 
 The website keeps its existing layout, photos, languages, ordering links, review workflow and admin features. The changes reduce cold-load downloads and avoid unnecessary loading screens when returning to the tab.
