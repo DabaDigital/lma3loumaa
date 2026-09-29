@@ -11,7 +11,9 @@ import {
 import type { ReactNode } from "react";
 import { categories, instagramUrl, items, locations } from "./data";
 import type { Item, Localized } from "./data";
-import { supabase } from "./supabase";
+import { hasStoredSession, loadSupabase, publicDb } from "./database";
+import type { Reader } from "./database";
+import { onFirstInput } from "./firstInput";
 import { onWindowReturn } from "./windowReturn";
 
 export type Managed = {
@@ -103,7 +105,7 @@ function takeEarlyRequests() {
   delete page.__lmaContent;
   return early;
 }
-// An early request that failed is made again through supabase-js, which
+// An early request that failed is made again through the client, which
 // retries as usual.
 const orEarly = (
   early: Promise<Rows> | undefined,
@@ -113,11 +115,12 @@ const orEarly = (
 // Reads a table that may not exist yet without failing the menu request:
 // null means "could not be read".
 const readOptional = <T,>(
+  db: Reader,
   table: string,
   read: (rows: any[]) => T,
   early?: Promise<Rows>,
 ) =>
-  orEarly(early, () => supabase!.from(table).select("*")).then(
+  orEarly(early, () => db.from(table).select("*")).then(
     ({ data: rows, error: failure }) => (failure || !rows ? null : read(rows)),
     () => null,
   );
@@ -158,34 +161,48 @@ const Context = createContext<
   error: false,
   refresh: async () => {},
 });
-export function ContentProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState(supabase ? empty : defaults);
+export function ContentProvider({
+  admin,
+  children,
+}: {
+  /** The dashboard reads and follows changes with the signed-in user's rights. */
+  admin: boolean;
+  children: ReactNode;
+}) {
+  const [data, setData] = useState(publicDb ? empty : defaults);
   const [links, setLinks] = useState<SiteLink[] | null>(null);
   const [linksError, setLinksError] = useState(false);
   const [posts, setPosts] = useState<SocialPost[] | null>(null);
   const [postsError, setPostsError] = useState(false);
-  const [loading, setLoading] = useState(!!supabase);
+  const [loading, setLoading] = useState(!!publicDb);
   const [error, setError] = useState(false);
   const request = useRef(0);
   const refresh = useCallback(async () => {
-    if (!supabase) return;
+    if (!publicDb) return;
     const version = ++request.current;
     const early = takeEarlyRequests();
     let update: () => void;
     try {
+      // A dashboard user, here or on the public page, reads with their own
+      // rights through supabase-js; visitors read anonymously.
+      const db: Reader =
+        admin || hasStoredSession()
+          ? ((await loadSupabase()) ?? publicDb)
+          : publicDb;
       const [results, nextLinks, nextPosts] = await Promise.all([
         Promise.all(
           ["categories", "menu_items", "locations"].map((table) =>
             orEarly(early?.[table], () =>
-              supabase!.from(table).select("*").order("sort_order").order("id"),
+              db.from(table).select("*").order("sort_order").order("id"),
             ),
           ),
         ),
         // Links and posts live in their own tables. Failing to read them (for
         // example before their migration is applied) must not take the menu
         // down. Sorted here: older link tables have no sort_order column.
-        readOptional("site_links", readLinks, early?.site_links),
+        readOptional(db, "site_links", readLinks, early?.site_links),
         readOptional(
+          db,
           "social_posts",
           (rows: SocialPost[]) => [...rows].sort(bySortOrder),
           early?.social_posts,
@@ -220,7 +237,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
     // Background data: as a transition, React renders the filled-in page in
     // short slices instead of one long task that blocks input.
     startTransition(update);
-  }, []);
+  }, [admin]);
   useEffect(() => {
     let active = true;
     let refreshTimer: number | undefined;
@@ -232,44 +249,69 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       }, 50);
     };
     void refresh();
-    if (!supabase) return;
-    const channel = supabase.channel("website-content");
-    for (const table of ["categories", "menu_items", "locations"])
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        scheduleRefresh,
-      );
-    channel.subscribe();
+    if (!publicDb) return;
     const stopReturn = onWindowReturn(scheduleRefresh);
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 30000);
-    const { data: auth } = supabase.auth.onAuthStateChange((event, session) => {
-      const user = session?.user.id ?? null;
-      // INITIAL_SESSION is already covered by the mount request. SIGNED_IN
-      // can fire again just because the same user returns to the tab.
-      const sameUser = user === authUser;
-      authUser = user;
-      if (event === "INITIAL_SESSION" || (event === "SIGNED_IN" && sameUser))
-        return;
-      request.current++;
-      if (!sameUser || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        setData(empty);
-        setLoading(true);
-      }
-      scheduleRefresh();
-    });
+    // Live changes and sign-in events come through supabase-js. A visitor's
+    // page connects on their first interaction instead of during the page
+    // load; until then the poll and returning to the tab keep it current.
+    let disconnect = () => {};
+    const connect = () =>
+      void loadSupabase().then((supabase) => {
+        if (!active || !supabase) return;
+        const channel = supabase.channel("website-content");
+        for (const table of ["categories", "menu_items", "locations"])
+          channel.on(
+            "postgres_changes",
+            { event: "*", schema: "public", table },
+            scheduleRefresh,
+          );
+        channel.subscribe();
+        const { data: auth } = supabase.auth.onAuthStateChange(
+          (event, session) => {
+            const user = session?.user.id ?? null;
+            // INITIAL_SESSION is already covered by the mount request.
+            // SIGNED_IN can fire again just because the same user returns to
+            // the tab.
+            const sameUser = user === authUser;
+            authUser = user;
+            if (
+              event === "INITIAL_SESSION" ||
+              (event === "SIGNED_IN" && sameUser)
+            )
+              return;
+            request.current++;
+            if (
+              !sameUser ||
+              event === "SIGNED_OUT" ||
+              event === "USER_UPDATED"
+            ) {
+              setData(empty);
+              setLoading(true);
+            }
+            scheduleRefresh();
+          },
+        );
+        disconnect = () => {
+          void supabase.removeChannel(channel);
+          auth.subscription.unsubscribe();
+        };
+      });
+    let stopWaiting = () => {};
+    if (admin || hasStoredSession()) connect();
+    else stopWaiting = onFirstInput(connect);
     return () => {
       active = false;
       window.clearTimeout(refreshTimer);
       request.current++;
-      void supabase!.removeChannel(channel);
-      auth.subscription.unsubscribe();
+      stopWaiting();
+      disconnect();
       stopReturn();
       clearInterval(timer);
     };
-  }, [refresh]);
+  }, [admin, refresh]);
   const value = useMemo(
     () => ({
       ...data,

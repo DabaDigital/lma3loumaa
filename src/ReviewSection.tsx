@@ -1,4 +1,4 @@
-import { lazy, Suspense, useId, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -357,14 +357,34 @@ export function Reviews() {
   const [requestedPage, setRequestedPage] = useState(1);
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<Review | null>(null);
+  const section = useRef<HTMLElement>(null);
   const browser = useRef<HTMLDivElement>(null);
   const list = useRef<HTMLDivElement>(null);
+  // The reviews sit far down the page. Their seven requests wait until the
+  // visitor comes within two screens of them, rather than joining the page
+  // load.
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const element = section.current;
+    if (near || !element) return;
+    const approach = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        approach.disconnect();
+        setNear(true);
+      },
+      { rootMargin: "200% 0px" },
+    );
+    approach.observe(element);
+    return () => approach.disconnect();
+  }, [near]);
   // Moderation can remove pages while a visitor is reading the last one.
   const [knownPages, setKnownPages] = useState(Infinity);
   const page = Math.min(requestedPage, knownPages);
   const { stats, reviews, pending, loading, error, refresh } = usePublicReviews(
     sort,
     page,
+    near,
   );
   const total = stats?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / REVIEW_PAGE_SIZE));
@@ -384,6 +404,7 @@ export function Reviews() {
   });
   return (
     <section
+      ref={section}
       className="reviews-section section"
       id="reviews"
       aria-labelledby="reviews-title"

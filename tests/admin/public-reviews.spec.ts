@@ -206,6 +206,11 @@ async function backend(page: Page, initial: Review[] = []) {
   });
   return state;
 }
+/** The home page, scrolled to the reviews: they load as a visitor nears them. */
+async function openReviews(page: Page) {
+  await page.goto("/");
+  await page.locator("#reviews").scrollIntoViewIfNeeded();
+}
 async function openForm(page: Page) {
   await page.goto("/");
   await page
@@ -253,6 +258,10 @@ test("the summary counts every approved review and the wall pages on the server"
   // The UI must fail closed even if an API accidentally returns extra records.
   state.leakUnapproved = true;
   await page.goto("/");
+  // Far down the page, the reviews are not part of the page load.
+  await page.waitForLoadState("networkidle");
+  expect(state.queries).toHaveLength(0);
+  await page.locator("#reviews").scrollIntoViewIfNeeded();
   const section = page.locator("#reviews");
   const summary = section.getByRole("region", { name: "Note de nos clients" });
   await expect(summary.locator(".reviews-score strong")).toHaveText("3,6");
@@ -327,7 +336,7 @@ test("visitors sort by relevance, newest or rating, and pages stay in range", as
   approved[5].image_path = `${approved[5].id}/photo.png`;
   approved[6].description = "";
   const state = await backend(page, approved);
-  await page.goto("/");
+  await openReviews(page);
   const section = page.locator("#reviews");
   const titles = section.locator(".review-card h3");
   const sorts = section.getByRole("group", { name: "Trier les avis" });
@@ -380,7 +389,7 @@ test("before the pagination migration, All falls back to newest first", async ({
   approved[1].image_path = `${approved[1].id}/photo.png`;
   const state = await backend(page, approved);
   state.detailRankMissing = true;
-  await page.goto("/");
+  await openReviews(page);
   const titles = page.locator("#reviews .review-card h3");
   await expect(titles).toHaveText([approved[0].title, approved[1].title]);
   await expect(page.locator("#reviews [role=alert]")).toHaveCount(0);
@@ -390,7 +399,7 @@ test("an empty review wall invites the first review without inventing a score", 
   page,
 }) => {
   await backend(page);
-  await page.goto("/");
+  await openReviews(page);
   const section = page.locator("#reviews");
   await expect(
     section.getByRole("heading", {
@@ -681,7 +690,7 @@ test("only approved reviews render as plain text, and moderation changes refresh
   ]);
   // The UI must fail closed even if an API accidentally returns extra records.
   state.leakUnapproved = true;
-  await page.goto("/");
+  await openReviews(page);
   const section = page.locator("#reviews");
   await expect(
     section.getByText(maliciousTitle, { exact: true }),

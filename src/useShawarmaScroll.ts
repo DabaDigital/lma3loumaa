@@ -90,11 +90,16 @@ export function useShawarmaScroll(
       travel =
         parseFloat(getComputedStyle(story!).getPropertyValue("--hero-travel")) ||
         0;
+      // The pin offset below moves the sticky art, not the runway it reads.
+      read();
       const layout = mobile ? "mobile" : "desktop";
       if (story!.dataset.scrollLayout !== layout)
         story!.dataset.scrollLayout = layout;
       story!.style.setProperty("--story-pin-top", `${pinTop}px`);
-      requestRender();
+      // Render now rather than in the next frame, whose read would force a
+      // layout once anything else (hydration, content) changed the page.
+      cancelFrame(task);
+      render(performance.now());
     }
     setExpanded(false);
     // On the prerendered page the observer's initial callback measures

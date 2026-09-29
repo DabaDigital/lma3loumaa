@@ -211,7 +211,19 @@ export function useFlavorTrack({
           : 0;
       const room = viewHeight - covered - headerHeight;
       const before = stage!.getBoundingClientRect();
+      // The writes below change the runway's contents, never where it starts.
+      const top = root!.getBoundingClientRect().top;
+      const stageHeight = stage!.offsetHeight;
+      const bar = stage!.querySelector(".menu-showcase-topbar");
+      const barBottom = bar
+        ? bar.getBoundingClientRect().bottom - before.top
+        : 0;
       const wasPinned = pinned;
+      // A pinned stage is at least as tall as its room. While neither changes,
+      // the stage measured above is the one that pins.
+      const settled =
+        wasPinned &&
+        root!.style.getPropertyValue("--showcase-room") === `${room}px`;
       // Pin only when the dishes and their controls fit between the bars.
       pinned = pin && count > 1 && track!.offsetHeight + 40 <= room;
       const padding = parseFloat(
@@ -227,18 +239,20 @@ export function useFlavorTrack({
       if (pinned) {
         // A stage taller than the screen pins by its bottom, like the hero,
         // tucking the whole category bar under the header rather than
-        // leaving a sliver of it showing.
+        // leaving a sliver of it showing. Pinning it or changing its room
+        // resizes it: only then is it measured again, which costs a layout.
         pinTop = Math.min(
           headerHeight,
-          viewHeight - covered - stage!.offsetHeight,
+          viewHeight - covered - (settled ? stageHeight : stage!.offsetHeight),
         );
-        const bar = stage!.querySelector(".menu-showcase-topbar");
         if (bar && pinTop < headerHeight)
           pinTop = Math.min(
             pinTop,
             headerHeight -
-              (bar.getBoundingClientRect().bottom -
-                stage!.getBoundingClientRect().top),
+              (settled
+                ? barBottom
+                : bar.getBoundingClientRect().bottom -
+                  stage!.getBoundingClientRect().top),
           );
         travel = Math.round(clamp(viewHeight * 0.6, 360, 600) * (count - 1));
         setVar(root!, "--showcase-pin-top", `${pinTop}px`);
@@ -252,6 +266,7 @@ export function useFlavorTrack({
         root!.style.removeProperty("--showcase-travel");
         if (section) section.style.scrollMarginTop = "";
       }
+      let scrolled = false;
       if (wasPinned !== pinned) {
         displayed = null;
         if (!pinned && count)
@@ -264,13 +279,17 @@ export function useFlavorTrack({
             top: root!.getBoundingClientRect().top - goal,
             behavior: "instant",
           });
+          scrolled = true;
         }
       }
       anchored = true;
       // Place the dishes before the browser paints: no frame shows them stacked.
       placed = null;
       cancelFrame(task);
-      read();
+      // Unless the page just scrolled, the runway's top read before the writes
+      // still holds; reading it again would force a layout.
+      if (scrolled) read();
+      else rootTop = top;
       paint(performance.now());
     }
 

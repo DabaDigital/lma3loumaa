@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { onFirstInput } from "./firstInput";
 import imageAssets from "./imageAssets.json";
 
 const cutout = imageAssets["/assets/hero/rotisserie-cutout.png"];
@@ -323,22 +324,13 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     // lathe wraps the middle of it all the way round, so the front shows a
     // quarter of its width, magnified well past the file drawn on screen.
     let wanted = false;
-    const intents = [
-      "scroll",
-      "wheel",
-      "touchstart",
-      "pointerdown",
-      "pointermove",
-      "keydown",
-    ] as const;
     const want = () => {
       if (wanted) return;
       wanted = true;
-      for (const type of intents) window.removeEventListener(type, want);
+      stopWaiting();
       load();
     };
-    for (const type of intents)
-      window.addEventListener(type, want, { passive: true });
+    const stopWaiting = onFirstInput(want);
     const build = () => {
       building = null;
       const texture = new Image();
@@ -398,7 +390,7 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
     document.addEventListener("visibilitychange", requestDraw);
     return () => {
       disposed = true;
-      for (const type of intents) window.removeEventListener(type, want);
+      stopWaiting();
       building?.();
       cancelAnimationFrame(pending);
       changes.disconnect();

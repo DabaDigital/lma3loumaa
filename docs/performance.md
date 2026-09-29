@@ -1,3 +1,64 @@
+# PageSpeed diagnostics — 29 September 2026, evening
+
+PageSpeed Insights on the deployed home page (commit 15a7ad4, whose build is byte-identical to production's `index-CF9xRKxx.js`) listed console errors, unused JavaScript, forced reflows, a long network chain and long tasks. Measured as in the section below: Lighthouse 13.5 mobile, local HTTP/2 + Brotli with the Vercel rules, live Supabase data, four alternating runs of each build.
+
+| Item | Before | After |
+| --- | --- | --- |
+| Best Practices | 96 | 100 |
+| Browser errors in the console | reviews 400 (and, on PageSpeed, realtime socket errors) | none |
+| Unused JavaScript | 32 KiB flagged (`supabase-vendor`) | not flagged |
+| Supabase code before first input | 54 KB compressed | 5 KB (`postgrest-vendor`) |
+| Requests to Supabase during the load | 12 | 5 |
+| Longest request chain, median | 1.82 s | 1.60 s |
+| Layouts forced by script (trace) | 3 sources: hero frame read, menu stage and runway | 1: menu stage when it first pins |
+| TBT, median | 155 ms | 83 ms |
+| Performance | 96–98 | 97–99 |
+
+What changed:
+
+- **Supabase loads when needed.** Visitors read the public tables with `@supabase/postgrest-js` alone (`src/database.ts`): the same requests, headers and retries supabase-js makes. supabase-js itself (sign-in, realtime, storage) is imported on demand: at once on the dashboard or when a dashboard session is stored, whose reads keep the user's rights; on a visitor's first scroll, touch, key or mouse movement for the live menu channel (`src/firstInput.ts`, shared with the rotisserie); and when a review photo or the review form needs storage. Until the first input, the 30-second poll and returning to the tab keep the menu current. PageSpeed's lab browser cannot open Supabase's WebSocket, which is what logged `ERR_NAME_NOT_RESOLVED`; it never interacts, so it no longer tries. `@supabase/postgrest-js` is pinned to the version supabase-js depends on (2.115.0) so there is one copy; update both together.
+- **Reviews load on approach.** The review section starts its seven requests (five per-star counts, a page, and the `detail_rank` fallback) when it comes within two screens, not during the page load. Deep links to `#reviews` still load them at once.
+- **Fewer forced layouts.** The menu track's `measure()` reads the runway's top with its other reads, before writing anything (its writes change the runway's contents, not where it starts), and re-measures the stage after its writes only when they change the pin or its room. The hero's `measure()` reads its anchor there too and renders at once, instead of reading it in the next frame after hydration has changed the page.
+
+Still listed, and why:
+
+- **Browser errors on real visits**: production still lacks `supabase/migrations/20260928210000_review_pagination.sql` (checked: `column reviews.detail_rank does not exist`), so every visitor who reaches the reviews logs one 400 before the fallback. Run that migration in the SQL Editor.
+- **Image delivery**: unchanged. Lighthouse compares the file to the photo's CSS size (380 px), while the emulated phone's 1.75× screen needs 665 px, so the 768 px hero and 512 px menu photo are the right files; smaller ones would be blurry on phones.
+- **Unused CSS**: flagged only in some runs, near Lighthouse's 10 KiB threshold. The unused rules are spread over the sections below the menu (not rendered yet under `content-visibility`), modals and pickers, which the same page uses as the visitor scrolls. Splitting critical CSS would bring back a render-blocking request or late styles for measured sections.
+- **Unused JavaScript in `react-vendor`** (22 KiB): parts of React DOM not run at load; it cannot be split.
+- **Long tasks**: the largest is the first layout of the prerendered page (hero scene, Arabic text shaping), before any script runs.
+- **Network chain**: page → app bundle → the five content tables. The menu data can only be requested once the app runs on the home page, which starts after the hero photo is painted.
+
+# PageSpeed insights — 29 September 2026, afternoon
+
+PageSpeed Insights on the deployed home page (commit 5887451) scored 98–99 on mobile and still listed several insights. Measured with Lighthouse 13.5 mobile (simulated throttling), headless Chromium 153 on Windows, against production builds served locally over HTTP/2 with Brotli and the `vercel.json` rewrites and headers, reading the live Supabase data. Before, the local run reproduced PageSpeed's figures exactly (474 KiB of image savings, the same stylesheet flagged).
+
+| Item | Before | After |
+| --- | --- | --- |
+| Improve image delivery | 474 KiB | 67 KiB |
+| Render-blocking requests | 1 stylesheet | none |
+| LCP, 3 or 4 runs | 1.95 s, or 5.1 s in 2 of 3 runs | 1.73 s in all 4 |
+| Label content name mismatch, identical links | failing | passing |
+| Clickjacking, cross-origin opener | no headers | passing |
+
+What changed:
+
+- **Photos.** `scripts/optimize-assets.py` encodes WebP at quality 75 with lossy alpha (60), which is about Lighthouse's 1/6 byte per pixel; at drawn sizes it looks the same as quality 86 with lossless alpha and is a third smaller. The hero photo is 53 KB instead of 88 KB. The script now removes outputs no longer referenced.
+- **Hero cutouts** go through the same pipeline. The rotisserie cutout on screen is 192–512 px wide by screen (11 KB on phones, was 105 KB). Its WebGL model still loads the 512 px file as a texture when it is built, since the lathe magnifies the middle of the photo. The reveal layers (175 KB, was 243 KB) stay `visibility: hidden` until scrolling opens them, so the page load no longer paints them, and are decoded before the scene counts as ready.
+- **Showcase `sizes`.** The carousel frame has a fixed height, so a square dish photo is drawn about 275 px wide on phones, not 92vw. Supabase-resized photos gained a 512 px step.
+- **Stylesheet in the home page.** `scripts/prerender.mjs` puts the built CSS inside `index.html` (about 19 KB with Brotli). Over HTTP/2 the first paint is unchanged (1.2 s) and no request blocks it. `app.html` keeps the link.
+- **App start.** The prerendered page starts the app once Element Timing reports the hero photo on screen (`elementtiming="hero"`), instead of after two animation frames. In headless Chrome the GPU can hold the first frame back by a second, and when the app started first, Lighthouse counted its download toward LCP.
+- **Accessibility.** The language button's name now starts with its visible code ("FR Langue"). Each reel's "see the post" link and each location's directions link names its post or location.
+- **Headers.** All responses send `Cross-Origin-Opener-Policy: same-origin`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` and a CSP limited to `frame-ancestors 'none'; object-src 'none'; base-uri 'none'`.
+
+Still listed, and why:
+
+- **Browser errors in the console** (Best Practices 96): production has not applied `supabase/migrations/20260928210000_review_pagination.sql`, so the first reviews request (ordered by `detail_rank`) returns 400 before the fallback. Run that migration in the SQL Editor.
+- **Image delivery, 67 KiB**: the hero photo and the first showcase photo. This Lighthouse compares files against CSS pixels, not the emulated phone's 1.75× screen, so photos that are sharp on that phone still count as oversized.
+- **Network dependency tree**: the fonts the inline CSS asks for, and the app bundle, which starts after the page is painted. Preloading fonts would waste them on French and English visits.
+- **Unused JavaScript**: mostly `@supabase/supabase-js`, whose auth, realtime and storage clients the public page uses after load. Replacing it with smaller clients is a separate change.
+- **CSP against XSS and Trusted Types**: a `script-src` policy needs per-build hashes of the three inline bootstrap scripts, plus Turnstile's loader. Not done here.
+
 # Lighthouse follow-up — 29 September 2026
 
 Lighthouse 13.5 (default simulated throttling: mobile is a Moto G Power profile, 4× CPU, slow 4G), headless Chromium 141 on Linux, against production builds served with Brotli and the Vercel rewrites and cache headers. Supabase is replaced by a local mock with the built-in menu, three links, four posts and 18 reviews, so the page fetches and renders real content. Lab numbers from one machine; PageSpeed Insights runs the same Lighthouse on Google's servers against the deployed site, so expect some spread.

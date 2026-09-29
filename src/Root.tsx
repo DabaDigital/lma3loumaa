@@ -10,7 +10,7 @@ const Admin = lazy(() => import("./admin/Admin"));
 export function Root({ admin }: { admin: boolean }) {
   return (
     <StrictMode>
-      <ContentProvider>
+      <ContentProvider admin={admin}>
         <Suspense fallback={<PageSkeleton />}>
           {admin ? <Admin /> : <App />}
         </Suspense>

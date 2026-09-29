@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { supabase } from "./supabase";
+import { loadSupabase, publicDb } from "./database";
 import { onWindowReturn } from "./windowReturn";
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
@@ -24,13 +24,15 @@ export const REVIEW_MAX_BYTES = 5 * 1024 * 1024;
 
 export function useReviewList(admin = false) {
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(!!supabase);
+  const [loading, setLoading] = useState(!!publicDb);
   const [error, setError] = useState(false);
   const version = useRef(0);
   const refresh = useCallback(async () => {
-    if (!supabase) return;
+    if (!publicDb) return;
     const request = ++version.current;
     try {
+      // The dashboard's list: unapproved reviews need the moderator's rights.
+      const supabase = (await loadSupabase())!;
       const rows: Review[] = [];
       const pageSize = 200;
       for (let offset = 0; ; offset += pageSize) {
@@ -72,21 +74,26 @@ export function useReviewList(admin = false) {
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 15000);
-    const auth = supabase?.auth.onAuthStateChange((event, session) => {
-      const user = session?.user.id ?? null;
-      const sameUser = user === authUser;
-      authUser = user;
-      if (event === "INITIAL_SESSION" || (event === "SIGNED_IN" && sameUser))
-        return;
-      version.current++;
-      if (!sameUser || event === "SIGNED_OUT" || event === "USER_UPDATED") {
-        setReviews([]);
-        setLoading(true);
-      }
-      window.clearTimeout(authTimer);
-      authTimer = window.setTimeout(() => {
-        if (active) void refresh();
-      }, 0);
+    let unsubscribe = () => {};
+    void loadSupabase().then((supabase) => {
+      if (!active || !supabase) return;
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        const user = session?.user.id ?? null;
+        const sameUser = user === authUser;
+        authUser = user;
+        if (event === "INITIAL_SESSION" || (event === "SIGNED_IN" && sameUser))
+          return;
+        version.current++;
+        if (!sameUser || event === "SIGNED_OUT" || event === "USER_UPDATED") {
+          setReviews([]);
+          setLoading(true);
+        }
+        window.clearTimeout(authTimer);
+        authTimer = window.setTimeout(() => {
+          if (active) void refresh();
+        }, 0);
+      });
+      unsubscribe = () => data.subscription.unsubscribe();
     });
     return () => {
       active = false;
@@ -94,7 +101,7 @@ export function useReviewList(admin = false) {
       version.current++;
       window.removeEventListener("focus", onFocus);
       window.clearInterval(timer);
-      auth?.data.subscription.unsubscribe();
+      unsubscribe();
     };
   }, [refresh]);
   return { reviews, loading, error, refresh };
@@ -117,7 +124,7 @@ let detailRankMissing = false;
 async function fetchReviewStats(): Promise<ReviewStats> {
   const counts = await Promise.all(
     [1, 2, 3, 4, 5].map(async (rating) => {
-      const { count, error } = await supabase!
+      const { count, error } = await publicDb!
         .from("reviews")
         .select("id", { count: "exact", head: true })
         .eq("status", "approved")
@@ -137,7 +144,7 @@ async function fetchReviewStats(): Promise<ReviewStats> {
 async function fetchReviewPage(sort: ReviewSort, page: number) {
   const from = (page - 1) * REVIEW_PAGE_SIZE;
   const query = (byDetail: boolean) => {
-    let request = supabase!
+    let request = publicDb!
       .from("reviews")
       .select(PUBLIC_COLUMNS)
       .eq("status", "approved");
@@ -161,8 +168,13 @@ async function fetchReviewPage(sort: ReviewSort, page: number) {
   );
 }
 
-/** One server-sorted page of approved reviews, plus rating totals. */
-export function usePublicReviews(sort: ReviewSort, page: number) {
+/** One server-sorted page of approved reviews, plus rating totals, read once
+ * `enabled` (until then it stays loading). */
+export function usePublicReviews(
+  sort: ReviewSort,
+  page: number,
+  enabled: boolean,
+) {
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [list, setList] = useState<{ key: string; reviews: Review[] } | null>(
     null,
@@ -173,7 +185,7 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
   const statsRequest = useRef(0);
   const pageRequest = useRef(0);
   const loadStats = useCallback(async () => {
-    if (!supabase) return;
+    if (!publicDb) return;
     const request = ++statsRequest.current;
     try {
       const next = await fetchReviewStats();
@@ -190,7 +202,7 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
     }
   }, []);
   const loadPage = useCallback(async () => {
-    if (!supabase) return;
+    if (!publicDb) return;
     const request = ++pageRequest.current;
     setPageError(false);
     try {
@@ -213,13 +225,14 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
     [loadStats, loadPage],
   );
   useEffect(() => {
-    void loadStats();
-  }, [loadStats]);
+    if (enabled) void loadStats();
+  }, [enabled, loadStats]);
   useEffect(() => {
-    void loadPage();
-  }, [loadPage]);
+    if (enabled) void loadPage();
+  }, [enabled, loadPage]);
   // Moderation changes appear when the visitor returns or after a minute.
   useEffect(() => {
+    if (!enabled) return;
     const stopReturn = onWindowReturn(() => void refresh());
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
@@ -228,7 +241,7 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
       stopReturn();
       window.clearInterval(timer);
     };
-  }, [refresh]);
+  }, [enabled, refresh]);
   // A failed background refresh keeps the reviews already on screen.
   const error =
     (statsError && !stats) || (pageError && (!list || list.key !== key));
@@ -237,7 +250,7 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
     reviews: list?.reviews ?? [],
     /** A different page or order is on its way; the previous one stays shown. */
     pending: !!list && list.key !== key && !error,
-    loading: !!supabase && (!stats || !list) && !error,
+    loading: !!publicDb && (!stats || !list) && !error,
     error,
     refresh,
   };
@@ -247,6 +260,7 @@ export async function setReviewStatus(
   id: string,
   status: "approved" | "rejected",
 ) {
+  const supabase = await loadSupabase();
   if (!supabase) throw new Error("Reviews are not configured");
   const { data, error } = await supabase
     .from("reviews")

@@ -2,7 +2,7 @@ import { LoadingImage } from "./LoadingImage";
 import { useEffect, useRef, useState } from "react";
 import { ImageIcon, ImageOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { supabase } from "./supabase";
+import { loadSupabase, publicDb } from "./database";
 import { REVIEW_BUCKET } from "./reviews";
 
 const THUMBNAIL = {
@@ -54,33 +54,34 @@ export function ReviewPhoto({
     return () => observer.disconnect();
   }, [visible]);
   useEffect(() => {
-    if (!path || !supabase || !visible) return;
+    if (!path || !publicDb || !visible) return;
     let active = true;
     let objectUrl: string | undefined;
     setPhoto(null);
     setFailed(false);
-    // Supabase only converts a resized photo to WebP for requests that accept
-    // it, and fetch() accepts anything: a 1200px render came back as a PNG of
-    // well over a megabyte.
-    const bucket = supabase.storage
-      .from(REVIEW_BUCKET)
-      .setHeader("Accept", "image/webp,*/*");
-    const original = () => bucket.download(path, {}, { cache: "no-store" });
     const transform = thumbnail
       ? THUMBNAIL
       : width
         ? { width, resize: "contain" as const, quality: 75 }
         : null;
-    // Fall back to the original if Supabase cannot resize a full-size view.
-    void (
-      transform
-        ? bucket
-            .download(path, { transform }, { cache: "no-store" })
-            .then((result) =>
-              result.error && !thumbnail ? original() : result,
-            )
-        : original()
-    )
+    void loadSupabase()
+      .then((supabase) => {
+        // Supabase only converts a resized photo to WebP for requests that
+        // accept it, and fetch() accepts anything: a 1200px render came back
+        // as a PNG of well over a megabyte.
+        const bucket = supabase!.storage
+          .from(REVIEW_BUCKET)
+          .setHeader("Accept", "image/webp,*/*");
+        const original = () => bucket.download(path, {}, { cache: "no-store" });
+        // Fall back to the original if Supabase cannot resize a full-size view.
+        return transform
+          ? bucket
+              .download(path, { transform }, { cache: "no-store" })
+              .then((result) =>
+                result.error && !thumbnail ? original() : result,
+              )
+          : original();
+      })
       .then(({ data, error }) => {
         if (!active) return;
         if (error || !data) {

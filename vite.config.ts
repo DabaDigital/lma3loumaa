@@ -20,6 +20,13 @@ export default defineConfig(({ mode }) => ({
               test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
               priority: 30,
             },
+            // Visitors read with PostgREST alone (src/database.ts); the rest of
+            // supabase-js loads when something needs it.
+            {
+              name: "postgrest-vendor",
+              test: /node_modules[\\/]@supabase[\\/]postgrest-js[\\/]/,
+              priority: 25,
+            },
             {
               name: "supabase-vendor",
               test: /node_modules[\\/]@supabase[\\/]/,
