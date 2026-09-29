@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { categories, instagramUrl, items, locations } from "./data";
 import type { Item, Localized } from "./data";
 import { supabase } from "./supabase";
+import { onWindowReturn } from "./windowReturn";
 
 export type Managed = {
   id: string;
@@ -240,8 +241,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
         scheduleRefresh,
       );
     channel.subscribe();
-    const onFocus = scheduleRefresh;
-    window.addEventListener("focus", onFocus);
+    const stopReturn = onWindowReturn(scheduleRefresh);
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 30000);
@@ -266,7 +266,7 @@ export function ContentProvider({ children }: { children: ReactNode }) {
       request.current++;
       void supabase!.removeChannel(channel);
       auth.subscription.unsubscribe();
-      window.removeEventListener("focus", onFocus);
+      stopReturn();
       clearInterval(timer);
     };
   }, [refresh]);

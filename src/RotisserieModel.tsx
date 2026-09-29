@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
 type Mesh = { vertices: Float32Array; indices: Uint16Array };
-type Renderer = { draw: (progress: number) => void; dispose: () => void };
+type Renderer = {
+  /** Draws at the canvas's CSS size, passed in so drawing never reads layout. */
+  draw: (progress: number, width: number, height: number) => void;
+  dispose: () => void;
+};
 
 // A restrained half-turn follows the same eased progress as the sandwich layers.
 const START_ANGLE = 20;
@@ -239,9 +243,7 @@ function createRenderer(
     gl.enable(gl.DEPTH_TEST);
     gl.clearColor(0, 0, 0, 0);
     return {
-      draw(progress) {
-        const width = canvas.clientWidth,
-          height = canvas.clientHeight;
+      draw(progress, width, height) {
         if (!width || !height || gl.isContextLost()) return;
         const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const renderWidth = Math.round(width * ratio),
@@ -291,11 +293,18 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
       pending = 0,
       visible = true,
       building: (() => void) | null = null,
-      disposed = false;
+      disposed = false,
+      // Kept by the resize observer: reading the canvas size while scrolling
+      // would force a layout right after the scene's progress changed.
+      width = 0,
+      height = 0;
+    const paint = () => {
+      if (visible && !document.hidden)
+        instance?.draw(Number(scene.dataset.progress || 0), width, height);
+    };
     const draw = () => {
       pending = 0;
-      if (visible && !document.hidden)
-        instance?.draw(Number(scene.dataset.progress || 0));
+      paint();
     };
     const requestDraw = () => {
       if (!pending) pending = requestAnimationFrame(draw);
@@ -329,6 +338,10 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
         .catch(() => {})
         .then(() => {
           if (disposed || instance || !image.naturalWidth) return;
+          if (!width || !height) {
+            width = element.clientWidth;
+            height = element.clientHeight;
+          }
           instance = createRenderer(element, image);
           if (instance) {
             draw();
@@ -355,13 +368,17 @@ export function RotisserieModel({ motion }: { motion: boolean }) {
       const progress = Number(scene.dataset.progress || 0);
       // A page restored part-way through the reveal needs the model at once.
       if (progress > 0) want();
-      if (visible && !document.hidden) instance?.draw(progress);
+      paint();
     });
     changes.observe(scene, {
       attributes: true,
       attributeFilter: ["data-progress"],
     });
-    const size = new ResizeObserver(requestDraw);
+    const size = new ResizeObserver(([entry]) => {
+      width = entry.contentRect.width;
+      height = entry.contentRect.height;
+      requestDraw();
+    });
     size.observe(element);
     const visibility = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;

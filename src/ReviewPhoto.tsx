@@ -59,7 +59,12 @@ export function ReviewPhoto({
     let objectUrl: string | undefined;
     setPhoto(null);
     setFailed(false);
-    const bucket = supabase.storage.from(REVIEW_BUCKET);
+    // Supabase only converts a resized photo to WebP for requests that accept
+    // it, and fetch() accepts anything: a 1200px render came back as a PNG of
+    // well over a megabyte.
+    const bucket = supabase.storage
+      .from(REVIEW_BUCKET)
+      .setHeader("Accept", "image/webp,*/*");
     const original = () => bucket.download(path, {}, { cache: "no-store" });
     const transform = thumbnail
       ? THUMBNAIL

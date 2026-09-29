@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
+import { cancelFrame, requestFrame } from "./frame";
 import { onPrerenderedPage } from "./hydration";
 
 /** A native sticky runway consumes scroll distance without trapping wheel/touch input.
@@ -24,11 +25,12 @@ export function useShawarmaScroll(
     const header = document.querySelector<HTMLElement>(".header");
     if (!scene || !story || !hero || !track || !art) return;
 
-    let frame = 0;
+    let scheduled = false;
     let disposed = false;
     let mobile = false;
     let pinTop = 0;
     let travel = 0;
+    let anchorTop = 0;
     let atEnd = false;
     let previous = "";
     let displayed: number | null = null;
@@ -36,17 +38,17 @@ export function useShawarmaScroll(
     story.dataset.scrollRunway = String(runway);
     story.dataset.scrollEnabled = String(enabled);
 
+    function read() {
+      if (disposed || !enabled || !travel) return;
+      anchorTop = (mobile ? track! : story!).getBoundingClientRect().top;
+    }
     function render(time: number) {
-      frame = 0;
+      scheduled = false;
       if (disposed) return;
-      const anchor = mobile ? track! : story!;
       const target =
         enabled && travel
-        ? Math.max(
-            0,
-            Math.min(1, (pinTop - anchor.getBoundingClientRect().top) / travel),
-          )
-        : 0;
+          ? Math.max(0, Math.min(1, (pinTop - anchorTop) / travel))
+          : 0;
       // Smooth wheel/touch steps once for the entire scene so the model and layers
       // stay in sync. Time-based damping behaves the same at 60Hz and 120Hz.
       const elapsed = lastTime ? Math.min(time - lastTime, 64) : 1000 / 60;
@@ -54,8 +56,8 @@ export function useShawarmaScroll(
       if (displayed === null || !enabled || document.hidden) displayed = target;
       else displayed += (target - displayed) * (1 - Math.exp(-elapsed / 90));
       if (Math.abs(target - displayed) < 0.0001) displayed = target;
-      else frame = requestAnimationFrame(render);
-      if (!frame) lastTime = 0;
+      else requestRender();
+      if (!scheduled) lastTime = 0;
       const progress = displayed;
       const formatted = progress.toFixed(4);
       if (formatted === previous) return;
@@ -68,13 +70,15 @@ export function useShawarmaScroll(
         setExpanded(atEnd);
       }
     }
+    const task = { read, write: render };
     function requestRender() {
-      if (!frame) frame = requestAnimationFrame(render);
+      scheduled = true;
+      requestFrame(task);
     }
     function measure() {
       if (disposed) return;
+      // Every read comes before the writes below, so they cost one layout.
       mobile = window.matchMedia("(max-width: 650px)").matches;
-      story!.dataset.scrollLayout = mobile ? "mobile" : "desktop";
       const headerHeight = header?.offsetHeight ?? 80;
       const viewHeight = document.documentElement.clientHeight;
       const artHeight = art!.offsetHeight;
@@ -86,6 +90,9 @@ export function useShawarmaScroll(
       travel =
         parseFloat(getComputedStyle(story!).getPropertyValue("--hero-travel")) ||
         0;
+      const layout = mobile ? "mobile" : "desktop";
+      if (story!.dataset.scrollLayout !== layout)
+        story!.dataset.scrollLayout = layout;
       story!.style.setProperty("--story-pin-top", `${pinTop}px`);
       requestRender();
     }
@@ -104,7 +111,7 @@ export function useShawarmaScroll(
       void document.fonts.ready.then(measure);
     return () => {
       disposed = true;
-      cancelAnimationFrame(frame);
+      cancelFrame(task);
       resize.disconnect();
       window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", measure);

@@ -532,18 +532,14 @@
   width: 640px;
   max-width: calc(100vw - 32px);
 }
+/* The frame keeps its size whatever the photo's shape, so the popup does not
+   grow and jump when the photo arrives. The photo fits inside it. */
 .review-detail-modal .review-photo {
-  aspect-ratio: auto;
-  min-height: 240px;
+  max-height: min(62dvh, 560px);
   background: #1f3a3d;
 }
 .review-detail-modal .review-photo > img {
-  height: auto;
-  max-height: min(62dvh, 560px);
   object-fit: contain;
-}
-.review-detail-modal .review-photo > span {
-  min-height: 240px;
 }
 .review-detail {
   display: grid;

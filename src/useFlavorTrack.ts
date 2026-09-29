@@ -1,5 +1,6 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import type { RefObject } from "react";
+import { cancelFrame, requestFrame } from "./frame";
 import { onPrerenderedPage } from "./hydration";
 
 const clamp = (value: number, min: number, max: number) =>
@@ -8,6 +9,12 @@ const mod = (value: number, size: number) => ((value % size) + size) % size;
 /** Signed distance around a ring of `size` dishes, in [-size / 2, size / 2). */
 const around = (value: number, size: number) =>
   mod(value + size / 2, size) - size / 2;
+/** Writes a custom property only when it changes: every write restyles the
+ * element's whole subtree. */
+function setVar(element: HTMLElement, name: string, value: string) {
+  if (element.style.getPropertyValue(name) !== value)
+    element.style.setProperty(name, value);
+}
 /** Each dish rests at the center for part of its scroll before the next one
  * slides in, so the stage reads as a sequence rather than a blur. */
 function settle(position: number) {
@@ -65,6 +72,8 @@ export function useFlavorTrack({
     } else target.current = count ? mod(Math.round(target.current), count) : 0;
 
     let pieces: HTMLElement[] = [];
+    // What place() last wrote on each dish, to skip dishes that did not move.
+    let written: string[] = [];
     let shift = { x: 0, y: 0, scale: 1, pager: true };
     // The runway keeps its state between runs, so a category change can hold
     // the stage in place as the runway collapses.
@@ -72,7 +81,8 @@ export function useFlavorTrack({
     let anchored = root.dataset.pinned !== undefined;
     let pinTop = 0;
     let travel = 0;
-    let frame = 0;
+    let rootTop = 0;
+    let scheduled = false;
     let lastTime = 0;
     let displayed: number | null = null;
     let placed: number | null = null;
@@ -89,12 +99,8 @@ export function useFlavorTrack({
         // details for the side caption. Phones slide full-size dishes instead.
         const near = shift.pager ? 0 : Math.min(distance, 1);
         const opacity = clamp((1.5 - distance) * 2, 0, 1);
-        slide.style.transform = `translate(${(offset * shift.x).toFixed(1)}px, ${(near * shift.y).toFixed(1)}px) scale(${(1 - near * (1 - shift.scale)).toFixed(4)})`;
-        slide.style.opacity = opacity.toFixed(3);
-        slide.style.visibility = opacity ? "" : "hidden";
-        slide.style.zIndex = distance < 0.5 ? "2" : "1";
-        slide.style.setProperty("--near", near.toFixed(3));
-        slide.dataset.side =
+        const transform = `translate(${(offset * shift.x).toFixed(1)}px, ${(near * shift.y).toFixed(1)}px) scale(${(1 - near * (1 - shift.scale)).toFixed(4)})`;
+        const side =
           distance < 0.5
             ? "center"
             : distance >= 1.5
@@ -102,13 +108,19 @@ export function useFlavorTrack({
               : offset < 0
                 ? "previous"
                 : "next";
+        // Dishes out of sight stay hidden and unchanged while others slide.
+        const state = opacity
+          ? `${transform} ${opacity.toFixed(3)} ${near.toFixed(3)} ${side}`
+          : side;
+        if (written[index] === state) return;
+        written[index] = state;
+        slide.style.transform = transform;
+        slide.style.opacity = opacity.toFixed(3);
+        slide.style.visibility = opacity ? "" : "hidden";
+        slide.style.zIndex = distance < 0.5 ? "2" : "1";
+        slide.style.setProperty("--near", near.toFixed(3));
+        slide.dataset.side = side;
       });
-      track!.style.setProperty(
-        "--track-progress",
-        count > 1
-          ? String(clamp(mod(position, count) / (count - 1), 0, 1))
-          : "0",
-      );
       const index = count ? mod(Math.round(position), count) : 0;
       if (index !== active) {
         active = index;
@@ -116,13 +128,15 @@ export function useFlavorTrack({
       }
     }
 
+    function read() {
+      if (!disposed && pinned) rootTop = root!.getBoundingClientRect().top;
+    }
     function paint(time: number) {
-      frame = 0;
+      scheduled = false;
       if (disposed) return;
       if (pinned)
         target.current = settle(
-          clamp((pinTop - root!.getBoundingClientRect().top) / travel, 0, 1) *
-            (count - 1),
+          clamp((pinTop - rootTop) / travel, 0, 1) * (count - 1),
         );
       const goal = target.current;
       // Time-based damping behaves the same at 60Hz and 120Hz.
@@ -133,12 +147,14 @@ export function useFlavorTrack({
         displayed +=
           (goal - displayed) * (1 - Math.exp(-elapsed / (pinned ? 90 : 130)));
       if (Math.abs(goal - displayed) < 0.001) displayed = goal;
-      else frame = requestAnimationFrame(paint);
-      if (!frame) lastTime = 0;
+      else requestPaint();
+      if (!scheduled) lastTime = 0;
       if (displayed !== placed) place(displayed);
     }
+    const task = { read, write: paint };
     function requestPaint() {
-      if (!frame) frame = requestAnimationFrame(paint);
+      scheduled = true;
+      requestFrame(task);
     }
 
     function measure() {
@@ -146,6 +162,7 @@ export function useFlavorTrack({
       pieces = [
         ...track!.querySelectorAll<HTMLElement>(":scope > .flavor-slide"),
       ];
+      written = [];
       // Side dishes land on the slots the grid keeps beside the feature; the
       // other side mirrors it. Without slots (phones) the track pages instead.
       const first = pieces[0];
@@ -153,9 +170,10 @@ export function useFlavorTrack({
       const visual = first?.querySelector<HTMLElement>(".flavor-main-visual");
       const slot = track!.querySelector<HTMLElement>(".flavor-neighbor");
       const slotArt = slot?.querySelector<HTMLElement>(".flavor-slot-art");
+      // Reads first: each write before a read would cost another layout.
+      let center: number | null = null;
       if (first && art && visual) {
-        const center = art.offsetTop + art.offsetHeight / 2;
-        track!.style.setProperty("--slide-origin", `${center}px`);
+        center = art.offsetTop + art.offsetHeight / 2;
         shift =
           slot?.offsetParent && slotArt
             ? {
@@ -182,7 +200,6 @@ export function useFlavorTrack({
                 scale: 1,
                 pager: true,
               };
-        track!.style.setProperty("--neighbor-scale", shift.scale.toFixed(4));
       }
 
       const headerHeight = header?.offsetHeight ?? 0;
@@ -197,8 +214,16 @@ export function useFlavorTrack({
       const wasPinned = pinned;
       // Pin only when the dishes and their controls fit between the bars.
       pinned = pin && count > 1 && track!.offsetHeight + 40 <= room;
-      root!.dataset.pinned = String(pinned);
-      root!.style.setProperty("--showcase-room", `${room}px`);
+      const padding = parseFloat(
+        getComputedStyle(document.documentElement).scrollPaddingTop,
+      );
+      if (center !== null) {
+        setVar(track!, "--slide-origin", `${center}px`);
+        setVar(track!, "--neighbor-scale", shift.scale.toFixed(4));
+      }
+      if (root!.dataset.pinned !== String(pinned))
+        root!.dataset.pinned = String(pinned);
+      setVar(root!, "--showcase-room", `${room}px`);
       if (pinned) {
         // A stage taller than the screen pins by its bottom, like the hero,
         // tucking the whole category bar under the header rather than
@@ -216,12 +241,9 @@ export function useFlavorTrack({
                 stage!.getBoundingClientRect().top),
           );
         travel = Math.round(clamp(viewHeight * 0.6, 360, 600) * (count - 1));
-        root!.style.setProperty("--showcase-pin-top", `${pinTop}px`);
-        root!.style.setProperty("--showcase-travel", `${travel}px`);
+        setVar(root!, "--showcase-pin-top", `${pinTop}px`);
+        setVar(root!, "--showcase-travel", `${travel}px`);
         // Links to #menu land on the first dish with the whole stage in view.
-        const padding = parseFloat(
-          getComputedStyle(document.documentElement).scrollPaddingTop,
-        );
         if (section)
           section.style.scrollMarginTop = `${pinTop - (padding || 0)}px`;
       } else {
@@ -247,7 +269,8 @@ export function useFlavorTrack({
       anchored = true;
       // Place the dishes before the browser paints: no frame shows them stacked.
       placed = null;
-      cancelAnimationFrame(frame);
+      cancelFrame(task);
+      read();
       paint(performance.now());
     }
 
@@ -295,7 +318,7 @@ export function useFlavorTrack({
       void document.fonts.ready.then(measure);
     return () => {
       disposed = true;
-      cancelAnimationFrame(frame);
+      cancelFrame(task);
       resize.disconnect();
       window.removeEventListener("scroll", requestPaint);
       window.removeEventListener("resize", measure);

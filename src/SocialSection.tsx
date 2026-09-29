@@ -29,6 +29,7 @@ import {
   tiktokPlayer,
 } from "./links";
 import type { ParsedPost } from "./links";
+import { cancelFrame, requestFrame } from "./frame";
 import "./socialSection.css";
 
 /** The section shows four posts, like the dashboard allows. */
@@ -119,22 +120,28 @@ function useReelRunway(
     let pinTop = 0;
     let travel = 0;
     let step = 0;
-    let frame = 0;
+    let rootTop = 0;
+    // Shares its frame with the other scroll effects: reads, then writes.
+    const task = {
+      read: () => {
+        if (pinned) rootTop = root.getBoundingClientRect().top;
+      },
+      write: () => {
+        if (!pinned) return;
+        const progress = clamp((pinTop - rootTop) / travel, 0, 1);
+        const position = settle(progress * (count - 1));
+        track.style.transform = `translate3d(${((rtl ? 1 : -1) * position * step).toFixed(1)}px, 0, 0)`;
+        root.style.setProperty(
+          "--reel-progress",
+          (position / (count - 1)).toFixed(4),
+        );
+      },
+    };
     const paint = () => {
-      frame = 0;
-      if (!pinned) return;
-      const progress = clamp(
-        (pinTop - root.getBoundingClientRect().top) / travel,
-        0,
-        1,
-      );
-      const position = settle(progress * (count - 1));
-      track.style.transform = `translate3d(${((rtl ? 1 : -1) * position * step).toFixed(1)}px, 0, 0)`;
-      root.style.setProperty("--reel-progress", (position / (count - 1)).toFixed(4));
+      task.read();
+      task.write();
     };
-    const requestPaint = () => {
-      if (!frame) frame = requestAnimationFrame(paint);
-    };
+    const requestPaint = () => requestFrame(task);
     const measure = () => {
       const headerHeight = header?.offsetHeight ?? 0;
       const view = document.documentElement.clientHeight;
@@ -210,7 +217,7 @@ function useReelRunway(
     track.addEventListener("focusin", onFocus);
     window.addEventListener("scroll", requestPaint, { passive: true });
     return () => {
-      cancelAnimationFrame(frame);
+      cancelFrame(task);
       approach.disconnect();
       resize.disconnect();
       phone.removeEventListener("change", measure);

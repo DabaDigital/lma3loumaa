@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { supabase } from "./supabase";
+import { onWindowReturn } from "./windowReturn";
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
 export type Review = {
@@ -219,13 +220,12 @@ export function usePublicReviews(sort: ReviewSort, page: number) {
   }, [loadPage]);
   // Moderation changes appear when the visitor returns or after a minute.
   useEffect(() => {
-    const onFocus = () => void refresh();
-    window.addEventListener("focus", onFocus);
+    const stopReturn = onWindowReturn(() => void refresh());
     const timer = window.setInterval(() => {
       if (!document.hidden) void refresh();
     }, 60000);
     return () => {
-      window.removeEventListener("focus", onFocus);
+      stopReturn();
       window.clearInterval(timer);
     };
   }, [refresh]);
